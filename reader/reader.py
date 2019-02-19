@@ -5,7 +5,7 @@ import argparse
 import imutils
 import cv2
 import matplotlib.pyplot as plt
-
+import os
 # declare program 's argument
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required=True,
@@ -30,10 +30,23 @@ digits = {}
 for (i, c) in enumerate(refCnts):
     (x, y, w, h) = cv2.boundingRect(c)
     roi = ref[y:y + h, x:x + w]
-    print(x, y, w, h)
     roi = cv2.resize(roi, (14, 20))
     digits[i] = roi
 
+
+onlyfiles = [f for f in os.listdir('ref') if os.path.isfile(os.path.join('ref', f))]
+for file in onlyfiles:
+    ref_img = cv2.imread(os.path.join('ref', file))
+    ref_img = cv2.cvtColor(ref_img, cv2.COLOR_BGR2GRAY)
+    digit = int(file[0])
+    digits[digit] = ref_img
+    
+
+
+# number3 = cv2.imread('1.png')
+# number3 = cv2.cvtColor(number3, cv2.COLOR_BGR2GRAY)
+# cv2.imwrite('number3.png', number3)
+# digits[3] = number3
 # load the image to read
 image = cv2.imread(args["image"])
 height, width, channels = image.shape
@@ -48,8 +61,6 @@ locs = []
 # get each number in picture
 for (i, c) in enumerate(cnts):
     (x, y, w, h) = cv2.boundingRect(c)
-    #little padding to get number more precisely
-    # cv2.rectangle(thresh, (x-2, y-2), (x+w+2, y+h+2), (0, 255, 0), 1)
     locs.append((x, y, w, h))
 
 locs = sorted(locs, key=lambda x: x[0])
@@ -57,19 +68,17 @@ output = []
 
 index = 0
 for l in locs:
-    index += 1
     (x, y, w, h) = l
     roi = thresh[y:y+h, x:x+w]
-    roi = cv2.resize(roi, (14, 20))
+    index += 1
     scores = []
     for (digit, digitROI) in digits.items():
-            # apply correlation-based template matching, take the
-            # score, and update the scores list
-            result = cv2.matchTemplate(roi, digitROI,
-                                       cv2.TM_CCOEFF)
-            (_, score, _, _) = cv2.minMaxLoc(result)
-            scores.append(score)
+        # apply correlation-based template matching, take the
+        # score, and update the scores list
+        result = cv2.matchTemplate(roi, digitROI,
+                                   cv2.TM_CCOEFF)
+        (_, score, _, _) = cv2.minMaxLoc(result)
+        scores.append(score)
     output.append(str(np.argmax(scores)))
 
 print(output)
-
