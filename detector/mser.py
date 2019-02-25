@@ -49,10 +49,11 @@ def get_coordinate(group):
     # get the bottom right location of id group
     xmax = xmax + w
     ymax = ymax + h
-    return (xmin,ymin,xmax,ymax)
+    return (xmin, ymin, xmax, ymax)
 
-mser = cv2.MSER_create(_delta=4, _max_area=1000)
-image_path = 'cropped.png'
+
+mser = cv2.MSER_create(_delta=4, _max_area=500)
+image_path = 'cropped1.png'
 img = cv2.imread(image_path)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -64,7 +65,7 @@ mask = np.zeros((img.shape[0], img.shape[1], 1), dtype=np.uint8)
 for contour in hulls:
     cv2.drawContours(mask, [contour], 0, (255, 255, 255), -1)
 
-im2, contours, hierarchy = cv2.findContours(
+_, contours, _ = cv2.findContours(
     mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 # create a list of character locations
@@ -72,7 +73,6 @@ locs = []
 for cnt in contours:
     x, y, w, h = cv2.boundingRect(cnt)
     locs.append((x, y, w, h))
-
 # devide locations list into group base on y axis
 locs.sort(key=lambda tup: tup[1])
 location_groups = list(grouper(locs, 1, 15))
@@ -82,12 +82,13 @@ location_groups = list(grouper(locs, 1, 15))
 # id is the first group
 id_group = location_groups[0]
 id_group.sort(key=lambda tup: tup[0])  # sort element in id group by x-axis
-print(id_group)
-# split label part and information part
-id_group_split_list = list(special_grouper(id_group, 0, 8))
-id_group = id_group_split_list[-1]
+# split label part and information part by height. Because the label part is shorter than the information
+average_height = sum(element[3]for element in id_group)/len(id_group)
+for element in id_group:
+    if element[3] < average_height:
+        id_group.remove(element)
 xmin, ymin, xmax, ymax = get_coordinate(id_group)
-id_group_image = img[ymin-10: ymax+10, xmin-5:xmax+5]  # some padding
+id_group_image = img[ymin-5: ymax+5, xmin-5:xmax+5]  # some padding
 cv2.imwrite('trash/id.png', id_group_image)
 
 
@@ -104,6 +105,5 @@ xmin, ymin, xmax, ymax = get_coordinate(name_group)
 name_group_image = img[ymin-10: ymax+10, xmin-5:xmax+5]  # some padding
 cv2.imwrite('trash/name.png', name_group_image)
 
-#get birthday part:
+# get birthday part:
 birthday_group = location_groups[2]
-
