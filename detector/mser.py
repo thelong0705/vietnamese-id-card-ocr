@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import imutils
 from itertools import groupby
+import copy
 
 
 def show_img(img):
@@ -52,8 +53,18 @@ def get_coordinate(group):
     return (xmin, ymin, xmax, ymax)
 
 
+def remove_shorter_than_average(group):
+    group_orig = copy.deepcopy(group)
+    average_height = sum(element[3]
+                         for element in group)/len(group)
+    for element in group_orig:
+        if element[3] <= average_height:
+            group.remove(element)
+    return group
+
+
 mser = cv2.MSER_create(_delta=4, _max_area=500)
-image_path = 'cropped1.png'
+image_path = 'cropped.png'
 img = cv2.imread(image_path)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -75,7 +86,7 @@ for cnt in contours:
     locs.append((x, y, w, h))
 # devide locations list into group base on y axis
 locs.sort(key=lambda tup: tup[1])
-location_groups = list(grouper(locs, 1, 15))
+location_groups = list(grouper(locs, 1, 10))  # TODO hard-code
 # group structure: id->name->
 
 # get id part
@@ -83,10 +94,7 @@ location_groups = list(grouper(locs, 1, 15))
 id_group = location_groups[0]
 id_group.sort(key=lambda tup: tup[0])  # sort element in id group by x-axis
 # split label part and information part by height. Because the label part is shorter than the information
-average_height = sum(element[3]for element in id_group)/len(id_group)
-for element in id_group:
-    if element[3] < average_height:
-        id_group.remove(element)
+id_group = remove_shorter_than_average(id_group)
 xmin, ymin, xmax, ymax = get_coordinate(id_group)
 id_group_image = img[ymin-5: ymax+5, xmin-5:xmax+5]  # some padding
 cv2.imwrite('trash/id.png', id_group_image)
@@ -102,8 +110,65 @@ name_group = name_group_split_list[-1]
 # get the first location (top_left) of id_group
 xmin, ymin, xmax, ymax = get_coordinate(name_group)
 # crop the name part:
-name_group_image = img[ymin-10: ymax+10, xmin-5:xmax+5]  # some padding
+name_group_image = img[ymin-5: ymax+5, xmin-5:xmax+5]  # some padding
 cv2.imwrite('trash/name.png', name_group_image)
 
 # get birthday part:
 birthday_group = location_groups[2]
+birthday_group.sort(key=lambda tup: tup[0])
+birthday_group = remove_shorter_than_average(birthday_group)
+birthday_group_split_list = list(special_grouper(birthday_group, 0, 10))
+birthday_group = birthday_group_split_list[-1]
+xmin, ymin, xmax, ymax = get_coordinate(birthday_group)
+birthday_group_image = img[ymin-5: ymax+5, xmin-5:xmax+5]  # some padding
+cv2.imwrite('trash/dob.png', birthday_group_image)
+
+# get gender part
+gender_group = location_groups[3]
+gender_group.sort(key=lambda tup: tup[0])
+gender_group_split_list = list(special_grouper(gender_group, 0, 20))
+gender_group = gender_group_split_list[0]
+xmin, ymin, w, h = gender_group[-1]
+xmax = xmin + w
+ymax = ymin + h
+# some padding
+gender_image = img[ymin-5: ymax+5, xmin-5:xmax+5]
+cv2.imwrite('trash/gender.png', gender_image)
+
+# get nationality part
+# get gender part
+national_group = location_groups[3]
+national_group.sort(key=lambda tup: tup[0])
+national_group_split_list = list(special_grouper(national_group, 0, 20))
+national_group = national_group_split_list[-1]
+national_group = remove_shorter_than_average(national_group)
+xmin, ymin, xmax, ymax = get_coordinate(national_group)
+gender_image = img[ymin-5: ymax+5, xmin-5:xmax+5]
+cv2.imwrite('trash/nation.png', gender_image)
+
+# get country side part
+country_group = location_groups[4]
+country_group.sort(key=lambda tup: tup[0])
+country_group_split_list = list(special_grouper(country_group, 0, 20))
+country_group = country_group_split_list[-1]
+xmin, ymin, xmax, ymax = get_coordinate(country_group)
+country_image = img[ymin-5: ymax+5, xmin-5:xmax+5]
+cv2.imwrite('trash/country.png', country_image)
+
+# get address part
+address_group = location_groups[5]
+average_y_axis = sum(element[1]
+                     for element in address_group)/len(address_group)
+address_group_1 = [c for c in address_group if c[1] <= average_y_axis]
+address_group_2 = [c for c in address_group if c[1] > average_y_axis]
+# get first address line
+address_group_1.sort(key=lambda tup: tup[0])
+address_group_1 = list(special_grouper(address_group_1, 0, 20))[-1]
+xmin, ymin, xmax, ymax = get_coordinate(address_group_1)
+first_address_image = img[ymin-5: ymax+5, xmin-5:xmax+5]
+cv2.imwrite('trash/address1.png', first_address_image)
+# get second address line
+address_group_2.sort(key=lambda tup: tup[0])
+xmin, ymin, xmax, ymax = get_coordinate(address_group_2)
+second_address_image = img[ymin-5: ymax+5, xmin-5:xmax+5]
+cv2.imwrite('trash/address2.png', second_address_image)
