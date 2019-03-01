@@ -1,9 +1,15 @@
 """
 Usage:
-  python generate_tfrecord.py --csv_input=data/train_labels.csv  --output_path=train.record --image_dir= {your image folder}
+  # From tensorflow/models/
+  # Create train data:
+  python generate_tfrecord.py --csv_input=data/train_labels.csv  --output_path=train.record
   # Create test data:
-  python generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record --image_dir= {your image folder}
+  python generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
 import os
 import io
 import pandas as pd
@@ -16,15 +22,22 @@ from collections import namedtuple, OrderedDict
 flags = tf.app.flags
 flags.DEFINE_string('csv_input', '', 'Path to the CSV input')
 flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
-flags.DEFINE_string('image_dir', '', 'Path to images')
+flags.DEFINE_string('image_dir', 'resize_img', 'Path to images')
 FLAGS = flags.FLAGS
 
 
+# TO-DO replace this with label map
 def class_text_to_int(row_label):
-    if row_label == 'card':
+    if row_label == 'top_left':
         return 1
+    elif row_label == 'top_right':
+        return 2
+    elif row_label == 'bottom_left':
+        return 3
+    elif row_label == 'bottom_right':
+        return 4
     else:
-        None
+        return None
 
 
 def split(df, group):
