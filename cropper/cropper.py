@@ -9,11 +9,10 @@ import cv2
 import imutils
 from collections import defaultdict
 from io import StringIO
-from PIL import Image
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
-
+from transform import four_point_transform
 
 def show_img(img):
     cv2.imshow('', img)
@@ -94,24 +93,25 @@ with detection_graph.as_default():
 category_index = label_map_util.create_category_index_from_labelmap(
     PATH_TO_LABELS, use_display_name=True)
 
-image_path = 'test_images/image5.jpg'
-image = Image.open(image_path)
-# the array based representation of the image will be used later in order to prepare the
-# result image with boxes and labels on it.
-image_np = load_image_into_numpy_array(image)
-# Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-image_np_expanded = np.expand_dims(image_np, axis=0)
+image_path = 'test_images/image6.jpg'
+img = cv2.imread(image_path)
+img = imutils.resize(img, height=500)
 # Actual detection.
-output_dict = run_inference_for_single_image(image_np, detection_graph)
+output_dict = run_inference_for_single_image(img, detection_graph)
 # Visualization of the results of a detection.
-vis_util.visualize_boxes_and_labels_on_image_array(
-    image_np,
-    output_dict['detection_boxes'],
-    output_dict['detection_classes'],
-    output_dict['detection_scores'],
-    category_index,
-    instance_masks=output_dict.get('detection_masks'),
-    use_normalized_coordinates=True,
-    line_thickness=8)
-img = imutils.resize(image_np, height=500)
-show_img(img)
+boxes = output_dict['detection_boxes']
+conner_location = []
+for i in range(boxes.shape[0]):
+    if output_dict['detection_scores'][i] > 0.5:
+        conner_location.append(tuple(boxes[i].tolist()))
+im_height, im_width, channels = img.shape
+list_conner = []
+for location in conner_location:
+    ymin, xmin, ymax, xmax = location
+    (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
+                                  int(ymin * im_height), int(ymax * im_height))
+    conner_middle_point = ((left+right)//2, (top+bottom)//2)
+    list_conner.append(conner_middle_point)
+pts = np.array(list_conner, dtype="float32")
+warped = four_point_transform(img, pts)
+show_img(warped)
