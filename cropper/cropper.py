@@ -13,6 +13,7 @@ from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 from transform import four_point_transform
+from skimage.filters import threshold_local
 
 def show_img(img):
     cv2.imshow('', img)
@@ -93,9 +94,13 @@ with detection_graph.as_default():
 category_index = label_map_util.create_category_index_from_labelmap(
     PATH_TO_LABELS, use_display_name=True)
 
-image_path = 'test_images/image6.jpg'
+image_path = 'test_images/image5.jpg'
 img = cv2.imread(image_path)
+orig = img.copy()
+ratio = img.shape[0] / 500.0
 img = imutils.resize(img, height=500)
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
 # Actual detection.
 output_dict = run_inference_for_single_image(img, detection_graph)
 # Visualization of the results of a detection.
@@ -113,5 +118,6 @@ for location in conner_location:
     conner_middle_point = ((left+right)//2, (top+bottom)//2)
     list_conner.append(conner_middle_point)
 pts = np.array(list_conner, dtype="float32")
-warped = four_point_transform(img, pts)
-show_img(warped)
+warped = four_point_transform(orig, pts*ratio)
+cv2.imwrite("warped.png",warped)
+
