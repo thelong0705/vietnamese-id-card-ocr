@@ -18,7 +18,7 @@ import logging
 
 import tensorflow as tf
 from google.protobuf import text_format
-from object_detection.protos import string_int_label_map_pb2
+from cropper.object_detection.protos import string_int_label_map_pb2
 
 
 def _validate_label_map(label_map):
@@ -33,8 +33,7 @@ def _validate_label_map(label_map):
   for item in label_map.item:
     if item.id < 0:
       raise ValueError('Label map ids should be >= 0.')
-    if (item.id == 0 and item.name != 'background' and
-        item.display_name != 'background'):
+    if (item.id == 0 and item.name != 'background' and item.display_name != 'background'):
       raise ValueError('Label map id 0 is reserved for the background label')
 
 

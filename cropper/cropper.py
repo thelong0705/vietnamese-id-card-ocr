@@ -9,15 +9,11 @@ import cv2
 import imutils
 from collections import defaultdict
 from io import StringIO
-from object_detection.utils import ops as utils_ops
-from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as vis_util
-from transform import four_point_transform
+from cropper.object_detection.utils import ops as utils_ops
+from cropper.object_detection.utils import label_map_util
+from cropper.object_detection.utils import visualization_utils as vis_util
+from cropper.transform import four_point_transform
 from skimage.filters import threshold_local
-
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
 
 
 def load_image_into_numpy_array(image):
@@ -48,7 +44,8 @@ def run_inference_for_single_image(image, graph):
                     tensor_dict['detection_boxes'], [0])
                 detection_masks = tf.squeeze(
                     tensor_dict['detection_masks'], [0])
-                # Reframe is required to translate mask from box coordinates to image coordinates and fit the image size.
+                # Reframe is required to translate mask from box coordinates to image coordinates
+                # and fit the image size.
                 real_num_detection = tf.cast(
                     tensor_dict['num_detections'][0], tf.int32)
                 detection_boxes = tf.slice(detection_boxes, [0, 0], [
@@ -78,46 +75,50 @@ def run_inference_for_single_image(image, graph):
     return output_dict
 
 
-MODEL_NAME = 'conner_graphs'
-# Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_FROZEN_GRAPH = MODEL_NAME + '/frozen_inference_graph.pb'
-# List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = os.path.join('.', 'conner_label.pbtxt')
-detection_graph = tf.Graph()
-with detection_graph.as_default():
-    od_graph_def = tf.GraphDef()
-    with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
-        serialized_graph = fid.read()
-        od_graph_def.ParseFromString(serialized_graph)
-        tf.import_graph_def(od_graph_def, name='')
+def load_model():
+    MODEL_NAME = 'conner_graphs'
+    # Path to frozen detection graph
+    PATH_TO_FROZEN_GRAPH = 'cropper/' + MODEL_NAME + '/frozen_inference_graph.pb'
+    # List of the strings that is used to add correct label for each box.
+    # PATH_TO_LABELS = os.path.join('.', 'conner_label.pbtxt')
+    detection_graph = tf.Graph()
+    with detection_graph.as_default():
+        od_graph_def = tf.GraphDef()
+        with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
+            serialized_graph = fid.read()
+            od_graph_def.ParseFromString(serialized_graph)
+            tf.import_graph_def(od_graph_def, name='')
 
-category_index = label_map_util.create_category_index_from_labelmap(
-    PATH_TO_LABELS, use_display_name=True)
+    # category_index = label_map_util.create_category_index_from_labelmap(
+    #     PATH_TO_LABELS, use_display_name=True)
+    return detection_graph
 
-image_path = 'test_images/image5.jpg'
-img = cv2.imread(image_path)
-orig = img.copy()
-ratio = img.shape[0] / 500.0
-img = imutils.resize(img, height=500)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-# Actual detection.
-output_dict = run_inference_for_single_image(img, detection_graph)
-# Visualization of the results of a detection.
-boxes = output_dict['detection_boxes']
-conner_location = []
-for i in range(boxes.shape[0]):
-    if output_dict['detection_scores'][i] > 0.5:
-        conner_location.append(tuple(boxes[i].tolist()))
-im_height, im_width, channels = img.shape
-list_conner = []
-for location in conner_location:
-    ymin, xmin, ymax, xmax = location
-    (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
-                                  int(ymin * im_height), int(ymax * im_height))
-    conner_middle_point = ((left+right)//2, (top+bottom)//2)
-    list_conner.append(conner_middle_point)
-pts = np.array(list_conner, dtype="float32")
-warped = four_point_transform(orig, pts*ratio)
-cv2.imwrite("warped.png",warped)
+def crop_card(image_path):
+    detection_graph = load_model()
 
+    img = cv2.imread(image_path)
+    orig = img.copy()
+    ratio = img.shape[0] / 500.0
+    img = imutils.resize(img, height=500)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Actual detection.
+    output_dict = run_inference_for_single_image(img, detection_graph)
+    # Visualization of the results of a detection.
+    boxes = output_dict['detection_boxes']
+    conner_location = []
+    for i in range(boxes.shape[0]):
+        if output_dict['detection_scores'][i] > 0.5:
+            conner_location.append(tuple(boxes[i].tolist()))
+    im_height, im_width, _ = img.shape
+    list_conner = []
+    for location in conner_location:
+        ymin, xmin, ymax, xmax = location
+        (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
+                                      int(ymin * im_height), int(ymax * im_height))
+        conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
+        list_conner.append(conner_middle_point)
+    pts = np.array(list_conner, dtype="float32")
+    warped = four_point_transform(orig, pts * ratio)
+    return warped

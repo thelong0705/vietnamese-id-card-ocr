@@ -33,8 +33,8 @@ import PIL.ImageFont as ImageFont
 import six
 import tensorflow as tf
 
-from object_detection.core import standard_fields as fields
-from object_detection.utils import shape_utils
+from cropper.object_detection.core import standard_fields as fields
+from cropper.object_detection.utils import shape_utils
 
 _TITLE_LEFT_MARGIN = 10
 _TITLE_TOP_MARGIN = 10
@@ -768,8 +768,7 @@ def add_cdf_image_summary(values, name):
     normalized_values = values / np.sum(values)
     sorted_values = np.sort(normalized_values)
     cumulative_values = np.cumsum(sorted_values)
-    fraction_of_examples = (np.arange(cumulative_values.size, dtype=np.float32)
-                            / cumulative_values.size)
+    fraction_of_examples = (np.arange(cumulative_values.size, dtype=np.float32) / cumulative_values.size)
     fig = plt.figure(frameon=False)
     ax = fig.add_subplot('111')
     ax.plot(fraction_of_examples, cumulative_values)

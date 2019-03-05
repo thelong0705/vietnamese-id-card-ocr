@@ -21,9 +21,9 @@ import six
 
 import tensorflow as tf
 
-from object_detection.core import standard_fields as fields
-from object_detection.utils import shape_utils
-from object_detection.utils import static_shape
+from cropper.object_detection.core import standard_fields as fields
+from cropper.object_detection.utils import shape_utils
+from cropper.object_detection.utils import static_shape
 
 
 def expanded_shape(orig_shape, start_dim, num_dims):
@@ -64,6 +64,7 @@ def normalized_to_image_coordinates(normalized_boxes, image_shape,
   """
   x_scale = tf.cast(image_shape[2], tf.float32)
   y_scale = tf.cast(image_shape[1], tf.float32)
+
   def _to_absolute_coordinates(normalized_boxes):
     y_min, x_min, y_max, x_max = tf.split(
         value=normalized_boxes, num_or_size_splits=4, axis=1)
