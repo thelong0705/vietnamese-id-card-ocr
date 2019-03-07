@@ -4,7 +4,6 @@ import imutils
 from matplotlib import pyplot as plt
 
 
-
 def show_img(img):
     cv2.imshow('', img)
     cv2.waitKey(0)
@@ -21,6 +20,4 @@ def get_each_roi(img):
     address_part_first = img[int(0.8*h):int(0.88*h), int(0.51*w):w]
     address_part_second = img[int(0.89*h):h, int(0.4*w):w]
 
-    return id_part,name_part
-
-
+    return id_part, name_part, dob_part, gender_part, nation_part, country_part, address_part_first, address_part_second

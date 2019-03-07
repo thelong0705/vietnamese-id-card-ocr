@@ -64,7 +64,7 @@ def remove_shorter_than_average(group):
 
 
 mser = cv2.MSER_create(_delta=4, _max_area=500)
-image_path = 'test/cropped1.png'
+image_path = 'test/warped2.png'
 img = cv2.imread(image_path)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -86,7 +86,7 @@ for cnt in contours:
     locs.append((x, y, w, h))
 # devide locations list into group base on y axis
 locs.sort(key=lambda tup: tup[1])
-draw_rec(locs,img)
+draw_rec(locs, img)
 show_img(img)
 location_groups = list(grouper(locs, 1, 10))  # TODO hard-code
 # group structure: id->name->
