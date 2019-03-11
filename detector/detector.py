@@ -88,7 +88,12 @@ def get_part(locs, img, ratio):
 
 def process_name(img):
     h, w, _ = img.shape
-    return img[0:h, int(0.3*w):w]
+    return img[0:h, int(0.2*w):w]
+
+
+def process_gender_and_nation(img):
+    h, w, _ = img.shape
+    return img[0:h, 0:int(0.35*w)], img[0:h, int(0.35*w):w]
 
 
 def get_information(img):
@@ -106,13 +111,13 @@ def get_information(img):
         blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     kernel = np.ones((1, w), np.uint8)
     closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    show_img(closing)
     _, cnts, _ = cv2.findContours(closing.copy(), cv2.RETR_EXTERNAL,
                                   cv2.CHAIN_APPROX_SIMPLE)
     locs = []
     for contour in cnts:
         x, y, w, h = cv2.boundingRect(contour)
         locs.append((x, y, w, h))
-
     locs.sort(key=lambda tup: tup[1])
     id_group = locs[0]
     name_group = locs[1]
@@ -127,7 +132,8 @@ def get_information(img):
     name_img = process_name(name_img)
     dob_img = get_part(dob_group, orig, ratio)
     gender_and_nation_img = get_part(gender_and_nation_group, orig, ratio)
+    gender_img, nation_img = process_gender_and_nation(gender_and_nation_img)
     country_img = get_part(country_group, orig, ratio)
     address_first_img = get_part(address_first, orig, ratio)
     address_second_img = get_part(address_second, orig, ratio)
-    return id_img, name_img, dob_img, gender_and_nation_img, country_img, address_first_img, address_second_img
+    return id_img, name_img, dob_img, gender_img, nation_img, country_img, address_first_img, address_second_img
