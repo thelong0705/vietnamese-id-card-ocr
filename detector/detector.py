@@ -65,7 +65,7 @@ def get_part(locs, img, ratio):
     return img
 
 
-def process_name(img):
+def split_half_by_distance(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
     thresh = cv2.bitwise_not(thresh)
@@ -87,16 +87,23 @@ def process_name(img):
         if diff > max_distance:
             max_distance = diff
             index = idx
-    locs = locs[index+1:]
+    first_half = locs[0:index + 1]
+    second_half = locs[index + 1:]
+    return first_half, second_half
+
+
+def process_name(img):
+    locs = split_half_by_distance(img)[1]
     xmin, xmax = get_max_box(locs)
-    name_img = img[0: img.shape[0], xmin - 5:xmax + 5]
-    show_img(name_img)
+    name_img = img[0: img.shape[0], xmin-5:xmax+5]
     return name_img
 
 
-def process_gender_and_nation(img):
-    h, w, _ = img.shape
-    return img[0:h, 0:int(0.35*w)], img[0:h, int(0.35*w):w]
+def process_gender(img):
+    locs = split_half_by_distance(img)[0]
+    xmin, xmax = get_max_box(locs)
+    gender_img = img[0: img.shape[0], xmin:xmax+5]
+    return gender_img
 
 
 def get_information(img):
@@ -134,8 +141,8 @@ def get_information(img):
     name_img = process_name(name_img)
     dob_img = get_part(dob_group, orig, ratio)
     gender_and_nation_img = get_part(gender_and_nation_group, orig, ratio)
-    gender_img, nation_img = process_gender_and_nation(gender_and_nation_img)
+    gender_img = process_gender(gender_and_nation_img)
     country_img = get_part(country_group, orig, ratio)
     address_first_img = get_part(address_first, orig, ratio)
     address_second_img = get_part(address_second, orig, ratio)
-    return id_img, name_img, dob_img, gender_img, nation_img, country_img, address_first_img, address_second_img
+    return id_img, name_img, dob_img, gender_img, country_img, address_first_img, address_second_img
