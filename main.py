@@ -22,8 +22,7 @@ args = vars(ap.parse_args())
 warped = crop_card(args['image'])
 group_tuple = get_information(warped)
 
-index = 0
-for t in group_tuple:
+for index, t in enumerate(group_tuple):
     language = 'vie'
     if index == 0 or index == 2:
         language = 'eng'
@@ -39,4 +38,3 @@ for t in group_tuple:
         text = text.split()[-1]
     os.remove(filename)
     print(text)
-    index = index + 1
