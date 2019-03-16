@@ -53,7 +53,7 @@ def remove_shorter_than_med(group, med):
 def remove_smaller_area(group, avg):
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[-1] * element[-2] < 0.5*avg:
+        if element[-1] * element[-2] < 0.5 * avg:
             group.remove(element)
     return group
 
@@ -142,7 +142,8 @@ def process_country(img):
     avg = statistics.mean(map(lambda t: t[-1] * t[-2], locs))
     locs = remove_smaller_area(locs, avg)
     xmin, xmax = get_max_box(locs)
-    country_img = img[0: img.shape[0], xmin-10:xmax+10]
+    xmin = xmin - 5 if xmin - 5 > 0 else xmin
+    country_img = img[0: img.shape[0], xmin:xmax+5]
     return country_img
 
 
