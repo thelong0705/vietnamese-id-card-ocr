@@ -16,6 +16,19 @@ def draw_rec(list_rec_tuple, img):
         cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
 
+def find_color_threshold(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+    thresh = cv2.bitwise_not(thresh)
+    _, contours, _ = cv2.findContours(
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    locs = []
+    mask = np.zeros(img.shape[:2], np.uint8)
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    cv2.drawContours(mask, contours, -1, 255, -1)
+    return cv2.mean(img_hsv, mask)[2]
+
+
 def get_max_box(group):
     xmin = min(group, key=lambda tup: tup[0])[0]
     xmax, _, w, _ = max(group, key=lambda tup: tup[0]+tup[2])
@@ -33,6 +46,14 @@ def remove_shorter_than_med(group, med):
     group_orig = copy.deepcopy(group)
     for element in group_orig:
         if element[-1] <= 0.75*med:
+            group.remove(element)
+    return group
+
+
+def remove_smaller_area(group, avg):
+    group_orig = copy.deepcopy(group)
+    for element in group_orig:
+        if element[-1] * element[-2] < 0.5*avg:
             group.remove(element)
     return group
 
@@ -106,6 +127,29 @@ def process_gender(img):
     return gender_img
 
 
+def process_country(img):
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    color_threshhold = find_color_threshold(img)
+    lower = np.array([0, 0, 0], np.uint8)
+    upper = np.array([180, 255, int(color_threshhold-20)], np.uint8)
+    mask = cv2.inRange(img_hsv, lower, upper)
+    _, contours, _ = cv2.findContours(
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    locs = []
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        locs.append([x, y, w, h])
+    avg = statistics.mean(map(lambda t: t[-1] * t[-2], locs))
+    locs = remove_smaller_area(locs, avg)
+    xmin, xmax = get_max_box(locs)
+    country_img = img[0: img.shape[0], xmin-10:xmax+10]
+    return country_img
+
+
+def process_first_address(img):
+    return process_country(img)
+
+
 def get_information(img):
     img = cropout_unimportant_part(img)
     orig = img.copy()
@@ -143,6 +187,8 @@ def get_information(img):
     gender_and_nation_img = get_part(gender_and_nation_group, orig, ratio)
     gender_img = process_gender(gender_and_nation_img)
     country_img = get_part(country_group, orig, ratio)
+    country_img = process_country(country_img)
     address_first_img = get_part(address_first, orig, ratio)
+    address_first_img = process_first_address(address_first_img)
     address_second_img = get_part(address_second, orig, ratio)
     return id_img, name_img, dob_img, gender_img, country_img, address_first_img, address_second_img
