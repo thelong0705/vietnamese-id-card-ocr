@@ -59,27 +59,6 @@ def process_id_part(img):
     return id_img
 
 
-# def process_name(img):
-#     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-#     lower = np.array([0, 0, 0], np.uint8)
-#     upper = np.array([180, 255, 127], np.uint8)
-#     mask = cv2.inRange(img, lower, upper)
-#     kernel = np.ones((5, 2), np.uint8)
-#     closing = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-#     _, contours, _ = cv2.findContours(
-#         closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#     show_img(closing)
-#     locs = []
-#     for cnt in contours:
-#         x, y, w, h = cv2.boundingRect(cnt)
-#         locs.append([x, y, w, h])
-#     locs.sort(key=lambda tup: tup[0])
-#     xmin, xmax = get_max_box(locs)
-#     img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
-#     name_img = img[0: img.shape[0], xmin-5:img.shape[1]]
-#     return name_img
-
-
 def get_part(locs, img, ratio):
     x, y, w, h = tuple(int(ratio * l) for l in locs)
     img = img[y-5: y+h+5, x:x+w]
@@ -87,8 +66,32 @@ def get_part(locs, img, ratio):
 
 
 def process_name(img):
-    h, w, _ = img.shape
-    return img[0:h, int(0.2*w):w]
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+    thresh = cv2.bitwise_not(thresh)
+    _, contours, _ = cv2.findContours(
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    locs = []
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        locs.append([x, y, w, h])
+    locs.sort(key=lambda tup: tup[0])
+    max_distance = 0
+    index = 0
+    for idx, current_location in enumerate(locs):
+        if idx >= len(locs) - 1:
+            break
+        next_location = locs[idx+1]
+        end_box_loc = current_location[0] + current_location[2]
+        diff = next_location[0] - end_box_loc
+        if diff > max_distance:
+            max_distance = diff
+            index = idx
+    locs = locs[index+1:]
+    xmin, xmax = get_max_box(locs)
+    name_img = img[0: img.shape[0], xmin - 5:xmax + 5]
+    show_img(name_img)
+    return name_img
 
 
 def process_gender_and_nation(img):
@@ -111,7 +114,6 @@ def get_information(img):
         blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     kernel = np.ones((1, w), np.uint8)
     closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-    show_img(closing)
     _, cnts, _ = cv2.findContours(closing.copy(), cv2.RETR_EXTERNAL,
                                   cv2.CHAIN_APPROX_SIMPLE)
     locs = []
