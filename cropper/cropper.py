@@ -1,19 +1,18 @@
 import numpy as np
-import os
-import six.moves.urllib as urllib
-import sys
-import tarfile
 import tensorflow as tf
-import zipfile
 import cv2
 import imutils
 from collections import defaultdict
-from io import StringIO
 from cropper.object_detection.utils import ops as utils_ops
 from cropper.object_detection.utils import label_map_util
 from cropper.object_detection.utils import visualization_utils as vis_util
 from cropper.transform import four_point_transform
-from skimage.filters import threshold_local
+from matplotlib import pyplot as plt
+
+
+def plot_img(img):
+    plt.imshow(img)
+    plt.show()
 
 
 def load_image_into_numpy_array(image):
@@ -75,12 +74,9 @@ def run_inference_for_single_image(image, graph):
     return output_dict
 
 
-def load_model():
-    MODEL_NAME = 'conner_graphs'
-    # Path to frozen detection graph
+def load_model(model_name):
+    MODEL_NAME = model_name
     PATH_TO_FROZEN_GRAPH = 'cropper/' + MODEL_NAME + '/frozen_inference_graph.pb'
-    # List of the strings that is used to add correct label for each box.
-    # PATH_TO_LABELS = os.path.join('.', 'conner_label.pbtxt')
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
@@ -88,15 +84,17 @@ def load_model():
             serialized_graph = fid.read()
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
-
-    # category_index = label_map_util.create_category_index_from_labelmap(
-    #     PATH_TO_LABELS, use_display_name=True)
     return detection_graph
 
 
-def crop_card(image_path):
-    detection_graph = load_model()
+def find_missing_element(L):
+    for i in range(1, 5):
+        if i not in L:
+            return i
 
+
+def crop_card(image_path):
+    detection_graph = load_model('graphs')
     img = cv2.imread(image_path)
     orig = img.copy()
     ratio = img.shape[0] / 500.0
@@ -107,18 +105,28 @@ def crop_card(image_path):
     output_dict = run_inference_for_single_image(img, detection_graph)
     # Visualization of the results of a detection.
     boxes = output_dict['detection_boxes']
+    im_height, im_width, _ = img.shape
     conner_location = []
     for i in range(boxes.shape[0]):
         if output_dict['detection_scores'][i] > 0.5:
-            conner_location.append(tuple(boxes[i].tolist()))
-    im_height, im_width, _ = img.shape
-    list_conner = []
-    for location in conner_location:
-        ymin, xmin, ymax, xmax = location
-        (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
-                                      int(ymin * im_height), int(ymax * im_height))
-        conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
-        list_conner.append(conner_middle_point)
+            ymin, xmin, ymax, xmax = tuple(boxes[i].tolist())
+            (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
+                                          int(ymin * im_height), int(ymax * im_height))
+            conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
+            location_index = output_dict['detection_classes'][i]
+            conner_location.append((conner_middle_point, location_index))
+    list_conner = [conner[0] for conner in conner_location]
+    if len(list_conner) == 3:
+        list_index = [conner[1] for conner in conner_location]
+        missing_element = find_missing_element(list_index)
+        missing_conner = (0, 0)
+        for conner in conner_location:
+            x, y = conner[0]
+            if (conner[1] + missing_element) != 5:
+                missing_conner = (missing_conner[0] + x, missing_conner[1] + y)
+            else:
+                missing_conner = (missing_conner[0] - x, missing_conner[1] - y)
+        list_conner.append(missing_conner)
     pts = np.array(list_conner, dtype="float32")
     warped = four_point_transform(orig, pts * ratio)
     return warped
