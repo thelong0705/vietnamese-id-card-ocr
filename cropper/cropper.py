@@ -8,6 +8,7 @@ from cropper.object_detection.utils import label_map_util
 from cropper.object_detection.utils import visualization_utils as vis_util
 from cropper.transform import four_point_transform
 from matplotlib import pyplot as plt
+import copy
 
 
 def plot_img(img):
@@ -93,17 +94,9 @@ def find_missing_element(L):
             return i
 
 
-def crop_card(image_path):
-    detection_graph = load_model('graphs')
-    img = cv2.imread(image_path)
-    orig = img.copy()
-    ratio = img.shape[0] / 500.0
-    img = imutils.resize(img, height=500)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # Actual detection.
+def get_conner_locations(img, model_name):
+    detection_graph = load_model(model_name)
     output_dict = run_inference_for_single_image(img, detection_graph)
-    # Visualization of the results of a detection.
     boxes = output_dict['detection_boxes']
     im_height, im_width, _ = img.shape
     conner_location = []
@@ -115,6 +108,38 @@ def crop_card(image_path):
             conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
             location_index = output_dict['detection_classes'][i]
             conner_location.append((conner_middle_point, location_index))
+    return conner_location
+
+
+def get_card(img, model_name):
+    detection_graph = load_model(model_name)
+    output_dict = run_inference_for_single_image(img, detection_graph)
+    boxes = output_dict['detection_boxes']
+    im_height, im_width, _ = img.shape
+    conner_location = []
+    for i in range(boxes.shape[0]):
+        if output_dict['detection_scores'][i] > 0.5:
+            ymin, xmin, ymax, xmax = tuple(boxes[i].tolist())
+            return (int(xmin * im_width), int(xmax * im_width),
+                    int(ymin * im_height), int(ymax * im_height))
+
+
+def remove_conner(list_conner, rectangle):
+    list_orig = copy.deepcopy(list_conner)
+    left, right, top, bottom = rectangle
+    for conner in list_orig:
+        if conner[0] < left or conner[0] > right or conner[1] < top or conner[1] > bottom:
+            list_conner.remove(conner)
+    return list_conner
+
+
+def crop_card(image_path):
+    img = cv2.imread(image_path)
+    orig = img.copy()
+    ratio = img.shape[0] / 500.0
+    img = imutils.resize(img, height=500)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    conner_location = get_conner_locations(img, 'graphs')
     list_conner = [conner[0] for conner in conner_location]
     if len(list_conner) == 3:
         list_index = [conner[1] for conner in conner_location]
@@ -127,6 +152,9 @@ def crop_card(image_path):
             else:
                 missing_conner = (missing_conner[0] - x, missing_conner[1] - y)
         list_conner.append(missing_conner)
+    if len(list_conner) > 4:
+        rectangle = get_card(img, 'card_graphs')
+        list_conner = remove_conner(list_conner, rectangle)
     pts = np.array(list_conner, dtype="float32")
     warped = four_point_transform(orig, pts * ratio)
     return warped
