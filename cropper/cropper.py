@@ -133,13 +133,27 @@ def remove_conner(list_conner, rectangle):
     return list_conner
 
 
+def resize_img(img):
+    h, w, _ = img.shape
+    max_dim = min(h, w)
+    ratio = 1
+    if max_dim <= 500:
+        return (img, ratio)
+    if max_dim == h:
+        ratio = img.shape[0] / 500.0
+        img = imutils.resize(img, height=500)
+    if max_dim == w:
+        ratio = img.shape[1] / 500.0
+        img = imutils.resize(img, width=500)
+    return (img, ratio)
+
+
 def crop_card(image_path):
     img = cv2.imread(image_path)
     orig = img.copy()
-    ratio = img.shape[0] / 500.0
-    img = imutils.resize(img, height=500)
+    img, ratio = resize_img(img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    conner_location = get_conner_locations(img, 'graphs')
+    conner_location = get_conner_locations(img, 'mon_graphs')
     list_conner = [conner[0] for conner in conner_location]
     if len(list_conner) == 3:
         list_index = [conner[1] for conner in conner_location]
