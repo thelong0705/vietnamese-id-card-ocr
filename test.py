@@ -54,10 +54,9 @@ def test_draw_rec(list_rec_tuple, img):
         y = y - 20
         if index != len(list_rec_tuple) - 1:
             x1, y1, _, _ = list_rec_tuple[index+1]
-            # cv2.rectangle(img, (x, y), (width, y1-5), (255, 0, 0), 2)
-            list_info.append(img[y:y1, x:width])
+            list_info.append((x, y, width, y1))
         else:
-            list_info.append(img[y:height, x:width])
+            list_info.append((x, y, width, height))
             # cv2.rectangle(img, (x, y), (width, height-5), (255, 0, 0), 2)
     return list_info
 
@@ -98,7 +97,9 @@ def crop_label(img):
     return img
 
 
-def process_name(img, height):
+def process_name(img, lozs, height):
+    x0, y0, x1, y1 = lozs
+    img = img[y0:y1, x0:x1]
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kernel = np.ones((25, 25), np.uint8)
     blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
@@ -115,11 +116,13 @@ def process_name(img, height):
         locs.append((x, y, w, h))
     max_locs = max(locs, key=lambda tup: tup[2] * tup[3])
     x, y, w, h = max_locs
-    wew = img[y:y+h, x:x+w]
-    return wew
+    return (x0+x, y0+y, x0+x+w, y0+y+h)
 
 
-def cut_name(img):
+def cut_name(img, lul):
+    x0, y0, x1, y1 = lul
+    img = img[y0:y1, x0:x1]
+    height, width, _ = img.shape
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kernel = np.ones((25, 25), np.uint8)
     blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
@@ -131,18 +134,17 @@ def cut_name(img):
     for contour in cnts:
         x, y, w, h = cv2.boundingRect(contour)
         locs.append((x, y, w, h))
-    locs = remove_name_label(locs)
-    locs = remove_smaller_area(locs)
-    xmin, ymin, xmax = get_max_box(locs)
-    gender_img = img[ymin-10: img.shape[0], xmin:img.shape[1]]
-    return gender_img
+    locs = remove_name_label(locs, width)
+    locs = remove_smaller_area(locs, width)
+    x, y, w, h = find_max_box(locs)
+    return (x0+x, y0+y, x0+x+w, y0+y+h)
 
 
-def remove_smaller_area(group):
+def remove_smaller_area(group, width):
     avg = statistics.median(map(lambda t: t[-1] * t[-2], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[-1] * element[-2] < 0.5 * avg:
+        if element[-1] * element[-2] < 0.5 * avg and element[0] < width/4:
             group.remove(element)
     return group
 
@@ -154,11 +156,11 @@ def get_max_box(group):
     return xmin, ymin, xmax
 
 
-def remove_name_label(group):
+def remove_name_label(group, width):
     avg = statistics.mean(map(lambda t: t[1], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[1] < avg:
+        if element[1] < avg and element[0] < width/4:
             group.remove(element)
     return group
 
@@ -166,7 +168,7 @@ def remove_name_label(group):
 def main(i):
     img = cv2.imread("result/{}_n.jpg".format(i))
     img = cropout_unimportant_part(img)
-
+    orig = img.copy()
     img, ratio = resize_img(img)
     label_img = crop_label(img)
     h, w, _ = label_img.shape
@@ -186,37 +188,31 @@ def main(i):
     locs.sort(key=lambda tup: tup[2] * tup[3], reverse=True)
     locs = locs[:5]
     list_info = test_draw_rec(locs, img)
-    name_img = list_info[0]
-    name = process_name(name_img, 5)
-    name = cut_name(name)
-    show_img(name)
-    dob_img = list_info[1]
-    dob = process_name(dob_img, 5)
-    show_img(dob)
-    gender_img = list_info[2]
-    gender = process_name(gender_img, 5)
+    x0, y0, x1, y1 = process_name(img, list_info[0], 5)
+    x0, y0, x1, y1 = cut_name(img, (x0, y0, x1, y1))
+    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    show_img(orig[y0:y1, x0:x1])
+
+    x0, y0, x1, y1 = process_name(img, list_info[1], 5)
+    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    show_img(orig[y0:y1, x0:x1])
+
+    x0, y0, x1, y1 = process_name(img, list_info[2], 5)
+    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    gender = orig[y0-5:y1, x0:x1]
     h, w, _ = gender.shape
     gender_part = gender[0:h, 0:int(w/3)]
     show_img(gender_part)
     nation_part = gender[0:h, int(w/3):int(0.85*w)]
     show_img(nation_part)
-    country_part = list_info[4]
-    result = brand_new_country(country_part)
-    if type(result) is tuple and result[-1] is not None:
-        show_img(result[0])
-        show_img(result[1])
-    if type(result) is tuple and result[-1] is None:
-        show_img(result[0])
-    if type(result) is not tuple:
-        show_img(result)
-
-    # brand_new_country(add_part)
-    # show_img(country_part)
-    # country = process_name(country_part, 1)
-    # country = process_country(country_part)
-    # address_img = list_info[4]
-    # show_img(address_img)
-    # process_country(address_img)
+    # result = brand_new_country(country_part)
+    # if type(result) is tuple and result[-1] is not None:
+    #     show_img(result[0])
+    #     show_img(result[1])
+    # if type(result) is tuple and result[-1] is None:
+    #     show_img(result[0])
+    # if type(result) is not tuple:
+    #     show_img(result)
 
 
 def process_country(img):
@@ -258,14 +254,13 @@ def process_country(img):
         show_img(second_line)
 
 
-def to_text(img, filename, config='--psm 7'):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    kernel = np.ones((25, 25), np.uint8)
-    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-    thresh = cv2.threshold(
-        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    cv2.imwrite(filename, thresh)
-    show_img(thresh)
+def to_text(img, filename='lul.png', config='--psm 7'):
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # kernel = np.ones((25, 25), np.uint8)
+    # blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+    # thresh = cv2.threshold(
+    #     blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang='vie', config=config)
     print(text)
@@ -391,7 +386,7 @@ def brand_new_country(img):
             return (img, None)
 
 
-# for i in range(1, 12):
-#     print(i)
-#     main(i)
-main(6)
+for i in range(1, 12):
+    print(i)
+    main(i)
+main(11)
