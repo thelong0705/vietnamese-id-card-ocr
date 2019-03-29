@@ -188,31 +188,39 @@ def main(i):
     locs.sort(key=lambda tup: tup[2] * tup[3], reverse=True)
     locs = locs[:5]
     list_info = test_draw_rec(locs, img)
-    x0, y0, x1, y1 = process_name(img, list_info[0], 5)
-    x0, y0, x1, y1 = cut_name(img, (x0, y0, x1, y1))
-    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
-    show_img(orig[y0:y1, x0:x1])
+    # x0, y0, x1, y1 = process_name(img, list_info[0], 5)
+    # x0, y0, x1, y1 = cut_name(img, (x0, y0, x1, y1))
+    # x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    # show_img(orig[y0:y1, x0:x1])
+    # to_text(orig[y0:y1, x0:x1])
 
-    x0, y0, x1, y1 = process_name(img, list_info[1], 5)
-    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
-    show_img(orig[y0:y1, x0:x1])
+    # x0, y0, x1, y1 = process_name(img, list_info[1], 5)
+    # x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    # show_img(orig[y0:y1, x0:x1])
+    # to_text(orig[y0:y1, x0:x1])
 
-    x0, y0, x1, y1 = process_name(img, list_info[2], 5)
-    x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
-    gender = orig[y0-5:y1, x0:x1]
-    h, w, _ = gender.shape
-    gender_part = gender[0:h, 0:int(w/3)]
-    show_img(gender_part)
-    nation_part = gender[0:h, int(w/3):int(0.85*w)]
-    show_img(nation_part)
-    # result = brand_new_country(country_part)
-    # if type(result) is tuple and result[-1] is not None:
-    #     show_img(result[0])
-    #     show_img(result[1])
-    # if type(result) is tuple and result[-1] is None:
-    #     show_img(result[0])
-    # if type(result) is not tuple:
-    #     show_img(result)
+    # x0, y0, x1, y1 = process_name(img, list_info[2], 5)
+    # x0, y0, x1, y1 = tuple(int(ratio * l) for l in (x0, y0, x1, y1))
+    # gender = orig[y0-5:y1, x0:x1]
+    # h, w, _ = gender.shape
+    # gender_part = gender[0:h, 0:int(w/3)]
+    # to_text(gender_part)
+    # nation_part = gender[0:h, int(w/3):int(0.85*w)]
+    # to_text(nation_part)
+    result = brand_new_country(img, list_info[3])
+    if type(result) is tuple:
+        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result)
+        show_img(orig[y0:y1, x0:x1])
+
+    if type(result) is list and len(result) == 2:
+        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
+        show_img(orig[y0:y1, x0:x1])
+        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[1])
+        show_img(orig[y0:y1, x0:x1])
+
+    if type(result) is list and len(result) == 1:
+        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
+        show_img(orig[y0:y1, x0:x1])
 
 
 def process_country(img):
@@ -255,12 +263,12 @@ def process_country(img):
 
 
 def to_text(img, filename='lul.png', config='--psm 7'):
-    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # kernel = np.ones((25, 25), np.uint8)
-    # blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-    # thresh = cv2.threshold(
-    #     blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    cv2.imwrite(filename, img)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    kernel = np.ones((25, 25), np.uint8)
+    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+    thresh = cv2.threshold(
+        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    cv2.imwrite(filename, thresh)
     text = pytesseract.image_to_string(Image.open(
         filename), lang='vie', config=config)
     print(text)
@@ -340,7 +348,10 @@ def find_max_box(group):
     return (xmin, ymin, xmax - xmin, ymax - ymin)
 
 
-def brand_new_country(img):
+def brand_new_country(img, lul):
+    x0, y0, x1, y1 = lul
+    img = img[y0:y1, x0:x1]
+    show_img(img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kernel = np.ones((25, 25), np.uint8)
     blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
@@ -361,8 +372,9 @@ def brand_new_country(img):
             locs.remove(l)
     x, y, w, h = find_max_box(locs)
     if h < 0.6 * height:
-        return img[y:y+h, x:x+w]
+        return (x0+x, y0+y, x0+x+w, y0+y+h)
     else:
+        x0, y0 = x0+x, y0+y
         crop_img = thresh[y:y+h, x:x+w]
         img = img[y:y+h, x:x+w]
         height, width = crop_img.shape
@@ -372,21 +384,21 @@ def brand_new_country(img):
                                       cv2.CHAIN_APPROX_SIMPLE)
         locs = []
         for contour in cnts:
-            x, y, w, h = cv2.boundingRect(contour)
-            locs.append((x, y, w, h))
+            locs.append(cv2.boundingRect(contour))
         if len(locs) > 1:
             locs.sort(key=lambda t: t[2]*t[3], reverse=True)
             locs = locs[:2]
+            show_img(img)
             x, y, w, h = locs[0]
-            first_line = img[y:y+h, x:x+w]
+            first_line = (x0+x, y0+y, x0+x+w, y0+y+h)
             x, y, w, h = locs[1]
-            second_line = img[y:y+h, x:x+w]
-            return (first_line, second_line)
+            second_line = (x0+x, y0+y, x0+x+w, y0+y+h)
+            return [first_line, second_line]
         if len(locs) == 1:
-            return (img, None)
+            return [(x0+x, y0+y, x0+x+w, y0+y+h)]
 
 
-for i in range(1, 12):
-    print(i)
-    main(i)
-main(11)
+# for i in range(1, 5):
+#     print(i)
+#     main(i)
+main(5)
