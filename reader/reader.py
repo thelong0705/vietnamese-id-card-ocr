@@ -3,6 +3,7 @@ import pytesseract
 import numpy as np
 from PIL import Image
 import copy
+import re
 
 
 def show_img(img):
@@ -49,8 +50,62 @@ def draw_rec(list_rec_tuple, img, ratio=1):
         cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
 
-for i in range(1, 14):
-    img = cv2.imread('id_{}.png'.format(i))
+def get_name(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    print(text)
+    show_img(img)
+    return text
+
+
+def get_dob(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'eng'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    numbers = re.findall(r'\d', text)
+    numbers = numbers[-8:]
+    print(numbers)
+    if numbers[4] != '2':
+        numbers[4] = '1'
+        numbers[5] = '9'
+        if numbers[6] == '0':
+            numbers[6] = '9'
+    numbers[2:2] = ['/']
+    numbers[5:5] = ['/']
+    numbers = ''.join(numbers)
+    print(numbers)
+    show_img(img)
+    return text
+
+
+def get_gender_text(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    words = text.split()
+    text = 'Nữ'
+    a_character = ['a', 'A', 'ă', 'â']
+    for word in words:
+        if word[0] == 'N':
+            if word[1] and word[1] in a_character:
+                text = 'Nam'
+            break
+    print(text)
+    show_img(img)
+    return text
+
+
+def get_id_numbers_text(img):
     height_img, width_img, _ = img.shape
     kernel = np.ones((height_img, height_img), np.uint8)
     if height_img < 20:
@@ -71,3 +126,7 @@ for i in range(1, 14):
         number = thresh[0:height, x-2:x+w+2]
         text = text + get_each_number(number, img[0:height, x-2:x+w+2])
     print(text[-12:])
+
+
+for i in range(1, 14):
+    img = cv2.imread('id_{}.png'.format(i))

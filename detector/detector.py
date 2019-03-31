@@ -3,11 +3,13 @@ import imutils
 import numpy as np
 import statistics
 import copy
+import pytesseract
+from PIL import Image
 
 
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
+# def show_img(img):
+#     cv2.imshow('', img)
+#     cv2.waitKey(0)
 
 
 def cropout_unimportant_part(img):
@@ -149,7 +151,7 @@ def get_text_from_two_lines(img, box):
             x0, y0 = x0+x, y0+y
             locs.sort(key=lambda t: t[2]*t[3], reverse=True)
             locs = locs[:2]
-            locs.sort(key=lambda t: t[0])
+            locs.sort(key=lambda t: t[1])
             x, y, w, h = locs[0]
             first_line = (x0+x, y0+y, x0+x+w, y0+y+h)
             x, y, w, h = locs[1]
@@ -162,17 +164,16 @@ def get_text_from_two_lines(img, box):
 def process_result(orig, ratio, result):
     if type(result) is tuple:
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result)
-        show_img(orig[y0:y1, x0:x1])
-
+        return [orig[y0:y1, x0:x1]]
     if type(result) is list and len(result) == 2:
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
-        show_img(orig[y0:y1, x0:x1])
+        first_line = orig[y0:y1, x0:x1]
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[1])
-        show_img(orig[y0:y1, x0:x1])
-
+        second_line = orig[y0:y1, x0:x1]
+        return [first_line, second_line]
     if type(result) is list and len(result) == 1:
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
-        show_img(orig[y0:y1, x0:x1])
+        return [orig[y0:y1, x0:x1], None]
 
 
 def detect_info(img):
@@ -193,17 +194,17 @@ def detect_info(img):
     number_box = (0, 0, img.shape[1], info_list[0][1])
     number_box = get_main_text(img, number_box, 5)
     number_img = get_img_from_box(orig, ratio, number_box)
-    show_img(number_img)
+    # show_img(number_img)
     # get name part
     name_box = info_list[0]
     name_box = get_name(img, get_main_text(img, name_box, 5))
     name_img = get_img_from_box(orig, ratio, name_box)
-    show_img(name_img)
+    # show_img(name_img)
     # get dob part
     dob_box = info_list[1]
     dob_box = get_main_text(img, dob_box, 5)
     dob_img = get_img_from_box(orig, ratio, dob_box)
-    show_img(dob_img)
+    # show_img(dob_img)
     # get gender_and national part
     gender_and_nationality_box = info_list[2]
     gender_and_nationality_box = get_main_text(
@@ -213,13 +214,41 @@ def detect_info(img):
     h, w, _ = gender_n_nation_img.shape
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
     nation_img = gender_n_nation_img[0:h, int(w/3):int(0.85*w)]
-    show_img(gender_img)
-    show_img(nation_img)
+    # show_img(gender_img)
+    # show_img(nation_img)
     # get country part
     country_box = info_list[3]
     result = get_text_from_two_lines(img, country_box)
-    process_result(orig, ratio, result)
+    country_img_list = process_result(orig, ratio, result)
     address_box = info_list[4]
     result = get_text_from_two_lines(img, address_box)
-    process_result(orig, ratio, result)
+    address_img_list = process_result(orig, ratio, result)
+    return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
 
+
+def get_text(img, config='--psm 7'):
+    filename = 'temp.png'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    print(text)
+    # show_img(img)
+    return text
+
+
+def omega(country_img_list):
+    if len(country_img_list) == 1:
+        get_text(country_img_list[0])
+    if len(country_img_list) == 2 and country_img_list[1] is not None:
+        get_text(country_img_list[0])
+        get_text(country_img_list[1])
+    else:
+        get_text(country_img_list[0], config='')
+
+
+img = cv2.imread('result/{}_n.jpg'.format(3))
+number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list = detect_info(
+    img)
+print(len(address_img_list))
+omega(address_img_list)
