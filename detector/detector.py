@@ -224,31 +224,3 @@ def detect_info(img):
     result = get_text_from_two_lines(img, address_box)
     address_img_list = process_result(orig, ratio, result)
     return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
-
-
-def get_text(img, config='--psm 7'):
-    filename = 'temp.png'
-    lang = 'vie'
-    cv2.imwrite(filename, img)
-    text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
-    print(text)
-    # show_img(img)
-    return text
-
-
-def omega(country_img_list):
-    if len(country_img_list) == 1:
-        get_text(country_img_list[0])
-    if len(country_img_list) == 2 and country_img_list[1] is not None:
-        get_text(country_img_list[0])
-        get_text(country_img_list[1])
-    else:
-        get_text(country_img_list[0], config='')
-
-
-img = cv2.imread('result/{}_n.jpg'.format(3))
-number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list = detect_info(
-    img)
-print(len(address_img_list))
-omega(address_img_list)

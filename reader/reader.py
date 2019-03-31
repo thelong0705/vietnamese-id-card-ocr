@@ -6,9 +6,9 @@ import copy
 import re
 
 
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
+# def show_img(img):
+#     cv2.imshow('', img)
+#     cv2.waitKey(0)
 
 
 def get_each_number(img, normal_img):
@@ -58,7 +58,6 @@ def get_name(img):
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     print(text)
-    show_img(img)
     return text
 
 
@@ -71,7 +70,6 @@ def get_dob(img):
         filename), lang=lang, config=config)
     numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
-    print(numbers)
     if numbers[4] != '2':
         numbers[4] = '1'
         numbers[5] = '9'
@@ -81,7 +79,6 @@ def get_dob(img):
     numbers[5:5] = ['/']
     numbers = ''.join(numbers)
     print(numbers)
-    show_img(img)
     return text
 
 
@@ -101,7 +98,6 @@ def get_gender_text(img):
                 text = 'Nam'
             break
     print(text)
-    show_img(img)
     return text
 
 
@@ -128,5 +124,22 @@ def get_id_numbers_text(img):
     print(text[-12:])
 
 
-for i in range(1, 14):
-    img = cv2.imread('id_{}.png'.format(i))
+def get_text(img, config='--psm 7'):
+    filename = 'temp.png'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    print(text)
+    return text
+
+
+def process_list_img(img_list):
+    if len(img_list) == 1:
+        get_text(img_list[0])
+        return
+    if len(img_list) == 2 and img_list[1] is not None:
+        get_text(img_list[0])
+        get_text(img_list[1])
+    else:
+        get_text(img_list[0], config='')
