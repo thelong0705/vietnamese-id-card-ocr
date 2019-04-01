@@ -50,7 +50,7 @@ def draw_rec(list_rec_tuple, img, ratio=1):
         cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
 
-def get_name(img):
+def get_text(img):
     filename = 'temp.png'
     config = '--psm 7'
     lang = 'vie'
@@ -61,7 +61,7 @@ def get_name(img):
     return text
 
 
-def get_dob(img):
+def get_dob_text(img):
     filename = 'temp.png'
     config = '--psm 7'
     lang = 'eng'
@@ -89,16 +89,17 @@ def get_gender_text(img):
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
-    words = text.split()
-    text = 'Nữ'
-    a_character = ['a', 'A', 'ă', 'â']
-    for word in words:
-        if word[0] == 'N':
-            if word[1] and word[1] in a_character:
-                text = 'Nam'
-            break
-    print(text)
-    return text
+    capital_n_index = text.find('N')
+    if capital_n_index != -1:
+        gender_text = text[capital_n_index:]
+        a_character = ['a', 'A', 'ă', 'â']
+        if gender_text[1] and gender_text[1] in a_character:
+            gender_text = 'Nam'
+            print(gender_text)
+            return
+    gender_text = 'Nữ'
+    print(gender_text)
+    return
 
 
 def get_nation_text(img):
@@ -145,22 +146,39 @@ def get_id_numbers_text(img):
     print(text[-12:])
 
 
-def get_text(img, config='--psm 7'):
+def strip_label_and_get_text(img, config='--psm 7'):
     filename = 'temp.png'
     lang = 'vie'
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
+    colon_index = text.find(':')
+    if colon_index != -1:
+        text = text[colon_index+1:]
+        text = text.strip()
+    else:
+        words = text.split()
+        for index, word in enumerate(words):
+            if index != 0 and word[0].isupper():
+                text = words[index:]
+                break
+        text = ' '.join(text)
     print(text)
     return text
 
 
 def process_list_img(img_list):
     if len(img_list) == 1:
-        get_text(img_list[0])
+        strip_label_and_get_text(img_list[0])
         return
     if len(img_list) == 2 and img_list[1] is not None:
-        get_text(img_list[0])
+        strip_label_and_get_text(img_list[0])
+        show_img(img_list[1])
         get_text(img_list[1])
     else:
-        get_text(img_list[0], config='')
+        strip_label_and_get_text(img_list[0], config='')
+
+
+def show_img(img):
+    cv2.imshow('', img)
+    cv2.waitKey(0)

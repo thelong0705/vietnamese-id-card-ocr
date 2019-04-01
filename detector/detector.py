@@ -169,11 +169,20 @@ def process_result(orig, ratio, result):
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
         first_line = orig[y0:y1, x0:x1]
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[1])
-        second_line = orig[y0:y1, x0:x1]
+        second_line = process_second_line(orig[y0:y1, x0:x1])
         return [first_line, second_line]
     if type(result) is list and len(result) == 1:
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
         return [orig[y0:y1, x0:x1], None]
+
+
+def process_second_line(img):
+    img_h, img_w, _ = img.shape
+    kernel = np.ones((25, 25), np.uint8)
+    thresh = get_threshold_img(img, kernel)
+    contour_boxes = get_contour_boxes(thresh)
+    x, y, w, h = find_max_box(contour_boxes)
+    return img[0:img_h, x:x+w]
 
 
 def detect_info(img):
