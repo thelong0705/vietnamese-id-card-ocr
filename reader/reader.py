@@ -101,6 +101,27 @@ def get_gender_text(img):
     return text
 
 
+def get_nation_text(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    colon_index = text.find(':')
+    if colon_index != -1:
+        text = text[colon_index+1:]
+        text = text.strip()
+    else:
+        words = text.split()
+        for index, word in enumerate(words):
+            if index != 0 and word[0].isupper():
+                text = words[index:]
+                break
+        text = ' '.join(text)
+    print(text)
+
+
 def get_id_numbers_text(img):
     height_img, width_img, _ = img.shape
     kernel = np.ones((height_img, height_img), np.uint8)
