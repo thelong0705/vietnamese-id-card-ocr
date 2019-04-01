@@ -7,9 +7,15 @@ import pytesseract
 from PIL import Image
 
 
-# def show_img(img):
-#     cv2.imshow('', img)
-#     cv2.waitKey(0)
+def show_img(img):
+    cv2.imshow('', img)
+    cv2.waitKey(0)
+
+
+def draw_rec(list_rec_tuple, img, ratio=1):
+    for rec_tuple in list_rec_tuple:
+        x, y, w, h = tuple(int(ratio * l) for l in rec_tuple)
+        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
 
 def cropout_unimportant_part(img):
@@ -119,8 +125,13 @@ def get_name(img, box):
     return (x0+x, y0+y, x0+x+w, y0+y+h)
 
 
-def get_img_from_box(orig, ratio, box):
+def get_img_from_box(orig, ratio, box, padding=0):
     x0, y0, x1, y1 = tuple(int(ratio * element) for element in box)
+    height, width, _ = orig.shape
+    if y0 - padding > 0:
+        y0 = y0 - padding
+    if y1 + padding < height:
+        y1 = y1 + padding
     return orig[y0:y1, x0:x1]
 
 
@@ -142,7 +153,6 @@ def get_text_from_two_lines(img, box):
         return (x0+x, y0+y, x0+x+w, y0+y+h)
     else:
         crop_img = thresh[y:y+h, x:x+w]
-        img = img[y:y+h, x:x+w]
         height, width = crop_img.shape
         kernel = np.ones((1, width), np.uint8)
         dilation = cv2.dilate(crop_img, kernel, iterations=1)
@@ -163,17 +173,15 @@ def get_text_from_two_lines(img, box):
 
 def process_result(orig, ratio, result):
     if type(result) is tuple:
-        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result)
-        return [orig[y0:y1, x0:x1]]
+        return [get_img_from_box(orig, ratio, result, padding=2)]
     if type(result) is list and len(result) == 2:
-        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
-        first_line = orig[y0:y1, x0:x1]
-        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[1])
-        second_line = process_second_line(orig[y0:y1, x0:x1])
+        first_line = get_img_from_box(orig, ratio, result[0], padding=2)
+        second_line_img = get_img_from_box(orig, ratio, result[1], padding=2)
+        second_line = process_second_line(second_line_img)
         return [first_line, second_line]
     if type(result) is list and len(result) == 1:
         x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
-        return [orig[y0:y1, x0:x1], None]
+        return [get_img_from_box(orig, ratio, result[0], padding=2), None]
 
 
 def process_second_line(img):
@@ -181,8 +189,12 @@ def process_second_line(img):
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
     contour_boxes = get_contour_boxes(thresh)
+    boxes_copy = copy.deepcopy(contour_boxes)
+    for box in boxes_copy:
+        if box[0] == 0:
+            contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
-    return img[0:img_h, x:x+w]
+    return img[0:img_h, x:img_w]
 
 
 def detect_info(img):
@@ -207,7 +219,7 @@ def detect_info(img):
     # get name part
     name_box = info_list[0]
     name_box = get_name(img, get_main_text(img, name_box, 5))
-    name_img = get_img_from_box(orig, ratio, name_box)
+    name_img = get_img_from_box(orig, ratio, name_box, padding=2)
     # show_img(name_img)
     # get dob part
     dob_box = info_list[1]
@@ -219,7 +231,7 @@ def detect_info(img):
     gender_and_nationality_box = get_main_text(
         img, gender_and_nationality_box, 5)
     gender_n_nation_img = get_img_from_box(
-        orig, ratio, gender_and_nationality_box)
+        orig, ratio, gender_and_nationality_box, padding=2)
     h, w, _ = gender_n_nation_img.shape
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
     nation_img = gender_n_nation_img[0:h, int(w/3):int(0.85*w)]

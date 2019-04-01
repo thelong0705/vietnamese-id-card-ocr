@@ -58,7 +58,6 @@ def get_text(img):
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     print(text)
-    return text
 
 
 def get_dob_text(img):
@@ -70,6 +69,8 @@ def get_dob_text(img):
         filename), lang=lang, config=config)
     numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
+    if len(numbers) < 8:
+        numbers.extend(['?' for i in range(8-len(numbers))])
     if numbers[4] != '2':
         numbers[4] = '1'
         numbers[5] = '9'
@@ -79,7 +80,6 @@ def get_dob_text(img):
     numbers[5:5] = ['/']
     numbers = ''.join(numbers)
     print(numbers)
-    return text
 
 
 def get_gender_text(img):
@@ -173,7 +173,6 @@ def process_list_img(img_list):
         return
     if len(img_list) == 2 and img_list[1] is not None:
         strip_label_and_get_text(img_list[0])
-        show_img(img_list[1])
         get_text(img_list[1])
     else:
         strip_label_and_get_text(img_list[0], config='')
