@@ -1,0 +1,110 @@
+import cv2
+import pytesseract
+import numpy as np
+from PIL import Image
+import copy
+import re
+
+
+def show_img(img):
+    cv2.imshow('', img)
+    cv2.waitKey(0)
+
+
+def get_each_number(img, normal_img):
+    filename = 'temp.png'
+    config = '--oem 0  --psm 10 -c tessedit_char_whitelist=1234567890'
+    lang = 'eng'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    if not text:
+        cv2.imwrite(filename, normal_img)
+        text = pytesseract.image_to_string(Image.open(
+            filename), lang=lang, config=config)
+        if not text:
+            text = '?'
+    return text
+
+
+def get_name(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    print(text)
+    show_img(img)
+    return text
+
+
+def get_dob(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'eng'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    numbers = re.findall(r'\d', text)
+    numbers = numbers[-8:]
+    print(numbers)
+    if numbers[4] != '2':
+        numbers[4] = '1'
+        numbers[5] = '9'
+        if numbers[6] == '0':
+            numbers[6] = '9'
+    numbers[2:2] = ['/']
+    numbers[5:5] = ['/']
+    numbers = ''.join(numbers)
+    print(numbers)
+    show_img(img)
+    return text
+
+
+def get_gender_text(img):
+    filename = 'temp.png'
+    config = '--psm 7'
+    lang = 'vie'
+    cv2.imwrite(filename, img)
+    text = pytesseract.image_to_string(Image.open(
+        filename), lang=lang, config=config)
+    words = text.split()
+    text = 'Nữ'
+    a_character = ['a', 'A', 'ă', 'â']
+    for word in words:
+        if word[0] == 'N':
+            if word[1] and word[1] in a_character:
+                text = 'Nam'
+            break
+    print(text)
+    show_img(img)
+    return text
+
+
+def get_threshold_img(img, kernel):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+    thresh = cv2.threshold(
+        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    return thresh
+
+
+def get_contour_boxes(img):
+    _, cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL,
+                                  cv2.CHAIN_APPROX_SIMPLE)
+    contour_boxes = []
+    for cnt in cnts:
+        contour_boxes.append(cv2.boundingRect(cnt))
+    return contour_boxes
+
+
+def draw_rec(list_rec_tuple, img, ratio=1):
+    for rec_tuple in list_rec_tuple:
+        x, y, w, h = tuple(int(ratio * l) for l in rec_tuple)
+        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
+
+for i in range(1, 12):
+    img = cv2.imread('name_{}.jpg'.format(i))
+    get_name(img)
