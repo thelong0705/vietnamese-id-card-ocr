@@ -85,19 +85,19 @@ def get_main_text(img, box, kernel_height):
 
 
 def remove_name_label(group, width):
-    avg = statistics.mean(map(lambda t: t[1], group))
+    avg = statistics.mean(map(lambda t: t[-1], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[1] < avg and element[0] < width/4:
+        if element[-1] < avg and element[0] < width/4:
             group.remove(element)
     return group
 
 
 def remove_smaller_area(group, width):
-    avg = statistics.median(map(lambda t: t[-1] * t[-2], group))
+    avg = statistics.mean(map(lambda t: t[-1] * t[-2], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[-1] * element[-2] < 0.5 * avg and element[0] < width/4:
+        if element[-1] * element[-2] < avg and element[0] < width/4:
             group.remove(element)
     return group
 
@@ -119,8 +119,9 @@ def get_name(img, box):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
     thresh_img = get_threshold_img(img, kernel)
     contour_boxes = get_contour_boxes(thresh_img)
-    contour_boxes = remove_name_label(contour_boxes, width)
     contour_boxes = remove_smaller_area(contour_boxes, width)
+    contour_boxes = remove_name_label(contour_boxes, width)
+    contour_boxes.sort(key=lambda t: t[0])
     x, y, w, h = find_max_box(contour_boxes)
     return (x0+x, y0+y, x0+x+w, y0+y+h)
 

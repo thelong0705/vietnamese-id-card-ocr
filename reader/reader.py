@@ -135,7 +135,7 @@ def get_id_numbers_text(img):
     boxes = get_contour_boxes(thresh)
     boxes_copy = copy.deepcopy(boxes)
     for box in boxes_copy:
-        if box[3] < 0.5 * height:
+        if box[3] < 0.4 * height:
             boxes.remove(box)
     boxes.sort(key=lambda t: t[0])
     text = ''
