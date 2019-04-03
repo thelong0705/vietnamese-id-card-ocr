@@ -7,9 +7,9 @@ import pytesseract
 from PIL import Image
 
 
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
+# def show_img(img):
+#     cv2.imshow('', img)
+#     cv2.waitKey(0)
 
 
 def draw_rec(list_rec_tuple, img, ratio=1):
@@ -142,14 +142,18 @@ def get_text_from_two_lines(img, box):
     thresh = get_threshold_img(img, kernel)
     height, width = thresh.shape
     contour_boxes = get_contour_boxes(thresh)
+    avg = statistics.mean(map(lambda t: t[-1], contour_boxes))
     boxes_copy = copy.deepcopy(contour_boxes)
     for box in boxes_copy:
         box_height = box[1] + box[3]
         height_lim = 0.9 * height
-        if box[1] == 0 or box[1] > height_lim or box_height == height:
+        if box[1] == 0 or box[1] > height_lim:
+            contour_boxes.remove(box)
+        elif box_height == height and box[3] < avg:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
-    if h < 0.6 * height:
+    # cv2.imwrite('hung.png', img[y:y+h, x:x+w]
+    if h < 55:
         return (x0+x, y0+y, x0+x+w, y0+y+h)
     else:
         crop_img = thresh[y:y+h, x:x+w]
@@ -180,8 +184,16 @@ def process_result(orig, ratio, result):
         second_line = process_second_line(second_line_img)
         return [first_line, second_line]
     if type(result) is list and len(result) == 1:
-        x0, y0, x1, y1 = tuple(int(ratio * l) for l in result[0])
         return [get_img_from_box(orig, ratio, result[0], padding=2), None]
+
+
+def get_last_y(result):
+    if type(result) is tuple:
+        return result[-1]
+    if type(result) is list and len(result) == 2:
+        return result[1][-1]
+    if type(result) is list and len(result) == 1:
+        return result[0][-1]
 
 
 def process_second_line(img):
@@ -215,17 +227,14 @@ def detect_info(img):
     number_box = (0, 0, img.shape[1], info_list[0][1])
     number_box = get_main_text(img, number_box, 5)
     number_img = get_img_from_box(orig, ratio, number_box)
-    # show_img(number_img)
     # get name part
     name_box = info_list[0]
     name_box = get_name(img, get_main_text(img, name_box, 5))
     name_img = get_img_from_box(orig, ratio, name_box, padding=2)
-    # show_img(name_img)
     # get dob part
     dob_box = info_list[1]
     dob_box = get_main_text(img, dob_box, 5)
     dob_img = get_img_from_box(orig, ratio, dob_box)
-    # show_img(dob_img)
     # get gender_and national part
     gender_and_nationality_box = info_list[2]
     gender_and_nationality_box = get_main_text(
@@ -236,13 +245,15 @@ def detect_info(img):
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
     nation_img = gender_n_nation_img[0:h, int(w/3):int(0.85*w)]
     nation_img = process_second_line(nation_img)
-    # show_img(gender_img)
-    # show_img(nation_img)
     # get country part
     country_box = info_list[3]
-    result = get_text_from_two_lines(img, country_box)
-    country_img_list = process_result(orig, ratio, result)
+    x, y, x1, y1 = country_box
+    last_y = gender_and_nationality_box[-1]
+    country_result = get_text_from_two_lines(img, (x, last_y, x1, y1))
+    country_img_list = process_result(orig, ratio, country_result)
     address_box = info_list[4]
-    result = get_text_from_two_lines(img, address_box)
+    x, y, x1, y1 = address_box
+    last_y = get_last_y(country_result)
+    result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
     return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
