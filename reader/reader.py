@@ -159,7 +159,7 @@ def strip_label_and_get_text(img, config='--psm 7'):
     else:
         words = text.split()
         for index, word in enumerate(words):
-            if index != 0 and word[0].isupper():
+            if index != 0 and (word[0].isupper() or word[0].isdigit()):
                 text = words[index:]
                 break
         text = ' '.join(text)

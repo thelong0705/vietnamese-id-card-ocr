@@ -26,7 +26,6 @@ def cropout_unimportant_part(img):
 
 def resize_img(img):
     h, w, _ = img.shape
-    max_dim = min(h, w)
     ratio = h/500
     img = imutils.resize(img, height=500)
     return (img, ratio)
@@ -236,6 +235,7 @@ def detect_info(img):
     h, w, _ = gender_n_nation_img.shape
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
     nation_img = gender_n_nation_img[0:h, int(w/3):int(0.85*w)]
+    nation_img = process_second_line(nation_img)
     # show_img(gender_img)
     # show_img(nation_img)
     # get country part
