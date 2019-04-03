@@ -7,9 +7,9 @@ import pytesseract
 from PIL import Image
 
 
-# def show_img(img):
-#     cv2.imshow('', img)
-#     cv2.waitKey(0)
+def show_img(img):
+    cv2.imshow('', img)
+    cv2.waitKey(0)
 
 
 def draw_rec(list_rec_tuple, img, ratio=1):
@@ -152,9 +152,8 @@ def get_text_from_two_lines(img, box):
         elif box_height == height and box[3] < avg:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
-    # cv2.imwrite('hung.png', img[y:y+h, x:x+w]
     if h < 55:
-        return (x0+x, y0+y, x0+x+w, y0+y+h)
+        return (x0+x, y0+y, x0+x+w+5, y0+y+h+5)
     else:
         crop_img = thresh[y:y+h, x:x+w]
         height, width = crop_img.shape
@@ -197,11 +196,12 @@ def get_last_y(result):
 
 
 def process_second_line(img):
+    show_img(img)
     img_h, img_w, _ = img.shape
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
     contour_boxes = get_contour_boxes(thresh)
-    avg = statistics.mean(map(lambda t: t[-1]* t[-2], contour_boxes))
+    avg = statistics.mean(map(lambda t: t[-1] * t[-2], contour_boxes))
     boxes_copy = copy.deepcopy(contour_boxes)
     for box in boxes_copy:
         if box[-1] * box[-2] < avg/2:

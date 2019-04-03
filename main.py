@@ -12,9 +12,11 @@ def show_img(img):
     cv2.waitKey(0)
 
 
-for i in range(20, 21):
-    warped = crop_card('test/{}.jpg'.format(5))
-    # cv2.imwrite('{}.png'.format(i), warped)
+for i in range(1, 2):
+    print(i)
+    # warped = crop_card('test/{}.jpg'.format(15))
+    # cv2.imwrite('15.png', warped)
+    warped = cv2.imread('{}.png'.format(15))
     number_img, name_img, dob_img, gender_img,\
         nation_img, country_img_list, address_img_list = detect_info(warped)
     reader.get_id_numbers_text(number_img)
@@ -25,4 +27,3 @@ for i in range(20, 21):
     reader.process_list_img(country_img_list)
     reader.process_list_img(address_img_list)
     # show_img(address_img_list[1])
-    # show_img(address_img_list[0])

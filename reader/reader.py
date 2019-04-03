@@ -4,11 +4,13 @@ import numpy as np
 from PIL import Image
 import copy
 import re
+import statistics
+import subprocess
 
 
-# def show_img(img):
-#     cv2.imshow('', img)
-#     cv2.waitKey(0)
+def show_img(img):
+    cv2.imshow('', img)
+    cv2.waitKey(0)
 
 
 def get_each_number(img, normal_img):
@@ -57,6 +59,11 @@ def get_text(img):
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
+    if not text:
+        subprocess.call(["./textcleaner", "-g", "-e", "normalize",
+                         "-o", "11", "-t", "5", "temp.png", "temp.png"])
+        text = pytesseract.image_to_string(Image.open(
+            filename), lang=lang, config=config)
     print(text)
 
 
@@ -169,15 +176,51 @@ def strip_label_and_get_text(img, config='--psm 7'):
 
 def process_list_img(img_list):
     if len(img_list) == 1:
-        strip_label_and_get_text(img_list[0])
+        process_first_line(img_list[0])
         return
     if len(img_list) == 2 and img_list[1] is not None:
-        strip_label_and_get_text(img_list[0])
+        process_first_line(img_list[0])
+        # strip_label_and_get_text(img_list[0])
         get_text(img_list[1])
     else:
         strip_label_and_get_text(img_list[0], config='')
 
 
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
+def process_first_line(img):
+    img_h, img_w, _ = img.shape
+    kernel = np.ones((25, 25), np.uint8)
+    thresh = get_threshold_img(img, kernel)
+    contour_boxes = get_contour_boxes(thresh)
+    avg = statistics.mean(map(lambda t: t[-1] * t[-2], contour_boxes))
+    boxes_copy = copy.deepcopy(contour_boxes)
+    for box in boxes_copy:
+        if box[-1] * box[-2] < avg/3:
+            contour_boxes.remove(box)
+    contour_boxes.sort(key=lambda t: t[0])
+    list_distance = []
+    for index, box in enumerate(contour_boxes):
+        current_x = box[0]+box[2]
+        if index < len(contour_boxes) - 1:
+            next_x = contour_boxes[index+1][0]
+            list_distance.append(next_x-current_x)
+    avg = statistics.mean(list_distance)
+    list_copy = copy.deepcopy(list_distance)
+    list_copy.sort(reverse=True)
+    if list_copy[0] > 3 * list_copy[1]:
+        max_index = list_distance.index(list_copy[0])
+        contour_boxes = contour_boxes[max_index+1:]
+        x, y, w, h = find_max_box(contour_boxes)
+        img = img[0:img_h, x-2:img_w]
+        get_text(img)
+    else:
+        strip_label_and_get_text(img)
+
+
+def find_max_box(group):
+    xmin = min(group, key=lambda t: t[0])[0]
+    ymin = min(group, key=lambda t: t[1])[1]
+    xmax_box = max(group, key=lambda t: t[0] + t[2])
+    xmax = xmax_box[0] + xmax_box[2]
+    ymax_box = max(group, key=lambda t: t[1] + t[3])
+    ymax = ymax_box[1] + ymax_box[3]
+    return (xmin, ymin, xmax - xmin, ymax - ymin)
