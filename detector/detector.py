@@ -34,7 +34,7 @@ def resize_img(img):
 
 def crop_label(img):
     h, w, _ = img.shape
-    img = img[0:int(0.95*h), 0:int(0.05 * w)]
+    img = img[0:int(0.9*h), 0:int(0.05 * w)]
     return img
 
 

@@ -12,10 +12,10 @@ def show_img(img):
     cv2.waitKey(0)
 
 
-warped = crop_card('test/{}.jpg'.format(14))
-# warped = cv2.imread('result/{}_n.jpg'.format(i))
+warped = crop_card('test/{}.jpg'.format(5))
 number_img, name_img, dob_img, gender_img,\
     nation_img, country_img_list, address_img_list = detect_info(warped)
+reader.get_id_numbers_text(number_img)
 reader.get_text(name_img)
 reader.get_dob_text(dob_img)
 reader.get_gender_text(gender_img)
