@@ -169,7 +169,7 @@ def get_text_from_two_lines(img, box):
             x, y, w, h = locs[0]
             first_line = (x0+x, y0+y, x0+x+w, y0+y+h)
             x, y, w, h = locs[1]
-            second_line = (x0+x, y0+y, x0+x+w, y0+y+h)
+            second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
             return [first_line, second_line]
         if len(locs) == 1:
             return [(x0+x, y0+y, x0+x+w, y0+y+h)]
@@ -201,9 +201,10 @@ def process_second_line(img):
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
     contour_boxes = get_contour_boxes(thresh)
+    avg = statistics.mean(map(lambda t: t[-1]* t[-2], contour_boxes))
     boxes_copy = copy.deepcopy(contour_boxes)
     for box in boxes_copy:
-        if box[0] == 0:
+        if box[-1] * box[-2] < avg/2:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     return img[0:img_h, x:img_w]
