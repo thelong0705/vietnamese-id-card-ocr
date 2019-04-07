@@ -196,7 +196,6 @@ def get_last_y(result):
 
 
 def process_second_line(img):
-    show_img(img)
     img_h, img_w, _ = img.shape
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)

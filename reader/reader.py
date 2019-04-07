@@ -153,7 +153,7 @@ def get_id_numbers_text(img):
     print(text[-12:])
 
 
-def strip_label_and_get_text(img, config='--psm 7'):
+def strip_label_and_get_text(img, is_country, config='--psm 7'):
     filename = 'temp.png'
     lang = 'vie'
     cv2.imwrite(filename, img)
@@ -166,7 +166,11 @@ def strip_label_and_get_text(img, config='--psm 7'):
     else:
         words = text.split()
         for index, word in enumerate(words):
-            if index != 0 and (word[0].isupper() or word[0].isdigit()):
+            if is_country:
+                condition = word[0].isupper()
+            else:
+                condition = word[0].isupper() or word[0].isdigit()
+            if index != 0 and condition:
                 text = words[index:]
                 break
         text = ' '.join(text)
@@ -174,19 +178,18 @@ def strip_label_and_get_text(img, config='--psm 7'):
     return text
 
 
-def process_list_img(img_list):
+def process_list_img(img_list, is_country):
     if len(img_list) == 1:
-        process_first_line(img_list[0])
+        process_first_line(img_list[0], is_country)
         return
     if len(img_list) == 2 and img_list[1] is not None:
-        process_first_line(img_list[0])
-        # strip_label_and_get_text(img_list[0])
+        process_first_line(img_list[0], is_country)
         get_text(img_list[1])
     else:
-        strip_label_and_get_text(img_list[0], config='')
+        strip_label_and_get_text(img_list[0], is_country, config='')
 
 
-def process_first_line(img):
+def process_first_line(img, is_country):
     img_h, img_w, _ = img.shape
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
@@ -213,7 +216,7 @@ def process_first_line(img):
         img = img[0:img_h, x-2:img_w]
         get_text(img)
     else:
-        strip_label_and_get_text(img)
+        strip_label_and_get_text(img, is_country)
 
 
 def find_max_box(group):

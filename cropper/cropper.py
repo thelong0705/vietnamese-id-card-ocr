@@ -106,8 +106,10 @@ def get_conner_locations(img, model_name):
             (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
                                           int(ymin * im_height), int(ymax * im_height))
             conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
+            cv2.rectangle(img, (left, top), (right, bottom), (255, 0, 0), 2)
             location_index = output_dict['detection_classes'][i]
             conner_location.append((conner_middle_point, location_index))
+        cv2.imwrite('predict.png', img)
     return conner_location
 
 
