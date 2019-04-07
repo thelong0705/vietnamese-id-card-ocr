@@ -106,10 +106,10 @@ def get_conner_locations(img, model_name):
             (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
                                           int(ymin * im_height), int(ymax * im_height))
             conner_middle_point = ((left + right) // 2, (top + bottom) // 2)
-            cv2.rectangle(img, (left, top), (right, bottom), (255, 0, 0), 2)
+            # cv2.rectangle(img, (left, top), (right, bottom), (255, 0, 0), 2)
             location_index = output_dict['detection_classes'][i]
             conner_location.append((conner_middle_point, location_index))
-        cv2.imwrite('predict.png', img)
+    # cv2.imwrite('predict.png', img)
     return conner_location
 
 
@@ -137,7 +137,7 @@ def remove_conner(list_conner, rectangle):
 
 def resize_img(img):
     h, w, _ = img.shape
-    max_dim = min(h, w)
+    max_dim = max(h, w)
     ratio = 1
     if max_dim <= 500:
         return (img, ratio)
@@ -155,7 +155,7 @@ def crop_card(image_path):
     orig = img.copy()
     img, ratio = resize_img(img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    conner_location = get_conner_locations(img, 'mon_graphs')
+    conner_location = get_conner_locations(img, 'rcnn_graphs')
     list_conner = [conner[0] for conner in conner_location]
     if len(list_conner) == 3:
         list_index = [conner[1] for conner in conner_location]
