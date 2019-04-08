@@ -74,6 +74,10 @@ def get_dob_text(img):
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
+    date = re.findall(r'\d{2}/\d{2}/\d{4}', text)
+    if date:
+        print(date[0])
+        return
     numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
     if len(numbers) < 8:
@@ -107,7 +111,6 @@ def get_gender_text(img):
     gender_text = 'Nữ'
     print(gender_text)
     return
-
 
 def get_nation_text(img):
     filename = 'temp.png'
@@ -160,7 +163,7 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     colon_index = text.find(':')
-    if colon_index != -1:
+    if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
         text = text.strip()
     else:

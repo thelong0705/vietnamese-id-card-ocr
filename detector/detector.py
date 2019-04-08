@@ -149,13 +149,13 @@ def get_text_from_two_lines(img, box):
         height_lim = 0.9 * height
         if box[1] == 0 or box[1] > height_lim:
             contour_boxes.remove(box)
-        elif box_height == height and box[3] < avg:
+        elif box_height == height and box[3] < 1.5 * avg:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     if h < 55:
         return (x0+x, y0+y, x0+x+w+5, y0+y+h+5)
     else:
-        crop_img = thresh[y:y+h, x:x+w]
+        crop_img = thresh[y:y+h, x:width]
         height, width = crop_img.shape
         kernel = np.ones((1, width), np.uint8)
         dilation = cv2.dilate(crop_img, kernel, iterations=1)
@@ -209,6 +209,7 @@ def process_second_line(img):
     return img[0:img_h, x:img_w]
 
 
+
 def detect_info(img):
     img = cropout_unimportant_part(img)
     orig = img.copy()
@@ -243,7 +244,7 @@ def detect_info(img):
         orig, ratio, gender_and_nationality_box, padding=2)
     h, w, _ = gender_n_nation_img.shape
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
-    nation_img = gender_n_nation_img[0:h, int(w/3):int(0.85*w)]
+    nation_img = gender_n_nation_img[0:h, int(w/3):int(w)]
     nation_img = process_second_line(nation_img)
     # get country part
     country_box = info_list[3]
@@ -257,3 +258,5 @@ def detect_info(img):
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
     return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
+
+def process_nation
