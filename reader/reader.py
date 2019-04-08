@@ -64,7 +64,8 @@ def get_text(img):
                          "-o", "11", "-t", "5", "temp.png", "temp.png"])
         text = pytesseract.image_to_string(Image.open(
             filename), lang=lang, config=config)
-    print(text)
+    # print(text)
+    return text
 
 
 def get_dob_text(img):
@@ -76,8 +77,8 @@ def get_dob_text(img):
         filename), lang=lang, config=config)
     date = re.findall(r'\d{2}/\d{2}/\d{4}', text)
     if date:
-        print(date[0])
-        return
+        # print(date[0])
+        return date[0]
     numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
     if len(numbers) < 8:
@@ -90,7 +91,8 @@ def get_dob_text(img):
     numbers[2:2] = ['/']
     numbers[5:5] = ['/']
     numbers = ''.join(numbers)
-    print(numbers)
+    # print(numbers)
+    return numbers
 
 
 def get_gender_text(img):
@@ -106,11 +108,12 @@ def get_gender_text(img):
         a_character = ['a', 'A', 'ă', 'â']
         if gender_text[1] and gender_text[1] in a_character:
             gender_text = 'Nam'
-            print(gender_text)
-            return
+            # print(gender_text)
+            return gender_text
     gender_text = 'Nữ'
-    print(gender_text)
-    return
+    # print(gender_text)
+    return gender_text
+
 
 def get_nation_text(img):
     filename = 'temp.png'
@@ -120,7 +123,7 @@ def get_nation_text(img):
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     colon_index = text.find(':')
-    if colon_index != -1:
+    if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
         text = text.strip()
     else:
@@ -130,7 +133,8 @@ def get_nation_text(img):
                 text = words[index:]
                 break
         text = ' '.join(text)
-    print(text)
+    # print(text)
+    return text
 
 
 def get_id_numbers_text(img):
@@ -153,7 +157,8 @@ def get_id_numbers_text(img):
         x, y, w, h = box
         number = thresh[0:height, x-2:x+w+2]
         text = text + get_each_number(number, img[0:height, x-2:x+w+2])
-    print(text[-12:])
+    # print(text[-12:])
+    return text[-12:]
 
 
 def strip_label_and_get_text(img, is_country, config='--psm 7'):
@@ -162,6 +167,7 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
+    text = text.strip()
     colon_index = text.find(':')
     if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
@@ -177,19 +183,19 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
                 text = words[index:]
                 break
         text = ' '.join(text)
-    print(text)
+    # print(text)
     return text
 
 
 def process_list_img(img_list, is_country):
     if len(img_list) == 1:
-        process_first_line(img_list[0], is_country)
-        return
+        return process_first_line(img_list[0], is_country)
     if len(img_list) == 2 and img_list[1] is not None:
-        process_first_line(img_list[0], is_country)
-        get_text(img_list[1])
+        line1 = process_first_line(img_list[0], is_country)
+        line2 = get_text(img_list[1])
+        return line1 + '\n' + line2
     else:
-        strip_label_and_get_text(img_list[0], is_country, config='')
+        return strip_label_and_get_text(img_list[0], is_country, config='')
 
 
 def process_first_line(img, is_country):
@@ -216,10 +222,10 @@ def process_first_line(img, is_country):
         max_index = list_distance.index(list_copy[0])
         contour_boxes = contour_boxes[max_index+1:]
         x, y, w, h = find_max_box(contour_boxes)
-        img = img[0:img_h, x-2:img_w]
-        get_text(img)
+        img = img[0:img_h, x:img_w]
+        return get_text(img)
     else:
-        strip_label_and_get_text(img, is_country)
+        return strip_label_and_get_text(img, is_country)
 
 
 def find_max_box(group):

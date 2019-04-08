@@ -206,8 +206,11 @@ def process_second_line(img):
         if box[-1] * box[-2] < avg/2:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
-    return img[0:img_h, x:img_w]
-
+    padding = 5
+    new_width = x + w + padding
+    if new_width > img_w:
+        new_width = img_w
+    return img[0:img_h, x: new_width]
 
 
 def detect_info(img):
@@ -258,5 +261,3 @@ def detect_info(img):
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
     return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
-
-def process_nation
