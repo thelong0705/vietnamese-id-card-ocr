@@ -171,7 +171,7 @@ def get_text_from_two_lines(img, box):
             second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
             return [first_line, second_line]
         if len(locs) == 1:
-            return [(x0+x, y0+y, x0+x+w, y0+y+h)]
+            return [(x0+x, y0+y, x0+x+w+5, y0+y+h)]
 
 
 def process_result(orig, ratio, result):
@@ -179,8 +179,9 @@ def process_result(orig, ratio, result):
         return [get_img_from_box(orig, ratio, result, padding=2)]
     if type(result) is list and len(result) == 2:
         first_line = get_img_from_box(orig, ratio, result[0], padding=2)
+        first_line = cut_blank_part(first_line)
         second_line_img = get_img_from_box(orig, ratio, result[1], padding=2)
-        second_line = process_second_line(second_line_img)
+        second_line = cut_blank_part(second_line_img)
         return [first_line, second_line]
     if type(result) is list and len(result) == 1:
         return [get_img_from_box(orig, ratio, result[0], padding=2), None]
@@ -195,18 +196,19 @@ def get_last_y(result):
         return result[0][-1]
 
 
-def process_second_line(img):
+def cut_blank_part(img, padding=5):
     img_h, img_w, _ = img.shape
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
     contour_boxes = get_contour_boxes(thresh)
-    avg = statistics.mean(map(lambda t: t[-1] * t[-2], contour_boxes))
+    avg = statistics.mean(map(lambda t: t[-1], contour_boxes))
     boxes_copy = copy.deepcopy(contour_boxes)
     for box in boxes_copy:
-        if box[-1] * box[-2] < avg/2:
+        if box[-1] < avg/2:
+            contour_boxes.remove(box)
+        elif box[1] > img_h/2:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
-    padding = 5
     new_width = x + w + padding
     if new_width > img_w:
         new_width = img_w
@@ -248,7 +250,7 @@ def detect_info(img):
     h, w, _ = gender_n_nation_img.shape
     gender_img = gender_n_nation_img[0:h, 0:int(w/3)]
     nation_img = gender_n_nation_img[0:h, int(w/3):int(w)]
-    nation_img = process_second_line(nation_img)
+    nation_img = cut_blank_part(nation_img)
     # get country part
     country_box = info_list[3]
     x, y, x1, y1 = country_box
