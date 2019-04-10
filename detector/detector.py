@@ -1,57 +1,25 @@
 import cv2
-import imutils
 import numpy as np
 import statistics
 import copy
 import pytesseract
 from PIL import Image
-
-
-def show_img(img):
-    cv2.imshow('', img)
-    cv2.waitKey(0)
-
-
-def draw_rec(list_rec_tuple, img, ratio=1):
-    for rec_tuple in list_rec_tuple:
-        x, y, w, h = tuple(int(ratio * l) for l in rec_tuple)
-        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+from util.util import get_contour_boxes, get_img_from_box, get_threshold_img, find_max_box, show_img
+from util.resize import resize_img_by_height, resize_img_by_width
 
 
 def cropout_unimportant_part(img):
     h, w, _ = img.shape
-    img = img[int(0.25*h):h, int(0.35*w):w]
+    x = get_information_x_axis(img)
+    y = get_information_y_axis(img)
+    img = img[y:h, x:w]
     return img
-
-
-def resize_img(img):
-    h, w, _ = img.shape
-    ratio = h/500
-    img = imutils.resize(img, height=500)
-    return (img, ratio)
 
 
 def crop_label(img):
     h, w, _ = img.shape
     img = img[0:int(0.9*h), 0:int(0.05 * w)]
     return img
-
-
-def get_threshold_img(img, kernel):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-    thresh = cv2.threshold(
-        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    return thresh
-
-
-def get_contour_boxes(img):
-    _, cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL,
-                                  cv2.CHAIN_APPROX_SIMPLE)
-    contour_boxes = []
-    for cnt in cnts:
-        contour_boxes.append(cv2.boundingRect(cnt))
-    return contour_boxes
 
 
 def get_info_list(img, contour_boxes):
@@ -101,16 +69,6 @@ def remove_smaller_area(group, width):
     return group
 
 
-def find_max_box(group):
-    xmin = min(group, key=lambda t: t[0])[0]
-    ymin = min(group, key=lambda t: t[1])[1]
-    xmax_box = max(group, key=lambda t: t[0] + t[2])
-    xmax = xmax_box[0] + xmax_box[2]
-    ymax_box = max(group, key=lambda t: t[1] + t[3])
-    ymax = ymax_box[1] + ymax_box[3]
-    return (xmin, ymin, xmax - xmin, ymax - ymin)
-
-
 def get_name(img, box):
     x0, y0, x1, y1 = box
     img = img[y0:y1, x0:x1]
@@ -123,16 +81,6 @@ def get_name(img, box):
     contour_boxes.sort(key=lambda t: t[0])
     x, y, w, h = find_max_box(contour_boxes)
     return (x0+x, y0+y, x0+x+w, y0+y+h)
-
-
-def get_img_from_box(orig, ratio, box, padding=0):
-    x0, y0, x1, y1 = tuple(int(ratio * element) for element in box)
-    height, width, _ = orig.shape
-    if y0 - padding > 0:
-        y0 = y0 - padding
-    if y1 + padding < height:
-        y1 = y1 + padding
-    return orig[y0:y1, x0:x1]
 
 
 def get_text_from_two_lines(img, box):
@@ -215,10 +163,49 @@ def cut_blank_part(img, padding=5):
     return img[0:img_h, x: new_width]
 
 
+def get_information_x_axis(img):
+    img, ratio = resize_img_by_height(img)
+    h, w, _ = img.shape
+    img_resize = img[100:400, int(0.25*w):int(0.5*w)]
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (100, 100))
+    thresh = get_threshold_img(img_resize, kernel)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 100))
+    dilation = cv2.dilate(thresh, kernel, iterations=1)
+    cnts = get_contour_boxes(dilation)
+    cnts_copy = copy.deepcopy(cnts)
+    for cnt in cnts_copy:
+        if cnt[0] < 0.1*img_resize.shape[1]:
+            cnts.remove(cnt)
+    max_cnt = max(cnts, key=lambda x: x[-1])
+    return int((max_cnt[0]-5+0.25*w)*ratio)
+
+
+def get_information_y_axis(img):
+    img, ratio = resize_img_by_width(img)
+    h, w, _ = img.shape
+    img_resize = img[0:int(0.4*h), 125:w]
+    gray = cv2.cvtColor(img_resize, cv2.COLOR_BGR2GRAY)
+    kernel = np.ones((25, 25), np.uint8)
+    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+    thresh = cv2.threshold(
+        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 3))
+    dilation = cv2.dilate(thresh, kernel, iterations=1)
+    cnts = get_contour_boxes(dilation)
+    cnts_copy = copy.deepcopy(cnts)
+    for cnt in cnts_copy:
+        if cnt[1]+cnt[-1] > 0.95 * img_resize.shape[0]:
+            cnts.remove(cnt)
+        elif cnt[-2] < 150:
+            cnts.remove(cnt)
+    max_cnt = max(cnts, key=lambda x: x[1])
+    return int((max_cnt[1]-5)*ratio)
+
+
 def detect_info(img):
     img = cropout_unimportant_part(img)
     orig = img.copy()
-    img, ratio = resize_img(img)
+    img, ratio = resize_img_by_height(img)
     label_img = crop_label(img)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
     threshold_img = get_threshold_img(label_img, kernel)
