@@ -55,7 +55,7 @@ nation_wrong = 0
 country_wrong = 0
 address_wrong = 0
 
-for i in range(40):
+for i in range(20):
     print('#', i)
     warped = cv2.imread('result/w_{}.png'.format(i))
     number_img, name_img, dob_img, gender_img,\
@@ -97,7 +97,7 @@ for i in range(40):
           ' Name character', name_character)
     print('DOB:     ', dob_wrong, distance(dob_text, dob_truth),
           ' DOB character', dob_character)
-    print('GENDER:  ', gender_wrong, gender_wrong + distance(gender_text, gender_truth),
+    print('GENDER:  ', gender_wrong, distance(gender_text, gender_truth),
           ' GENDER character', gender_character)
     print('NATION:  ', nation_wrong, distance(nation_text, nation_truth),
           'Nation character', nation_character)

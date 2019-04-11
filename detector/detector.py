@@ -4,7 +4,7 @@ import statistics
 import copy
 import pytesseract
 from PIL import Image
-from util.util import get_contour_boxes, get_img_from_box, get_threshold_img, find_max_box, show_img
+from util.util import get_contour_boxes, get_img_from_box, get_threshold_img, find_max_box, show_img, draw_rec
 from util.resize import resize_img_by_height, resize_img_by_width
 
 
@@ -89,15 +89,19 @@ def get_text_from_two_lines(img, box):
     kernel = np.ones((25, 25), np.uint8)
     thresh = get_threshold_img(img, kernel)
     height, width = thresh.shape
-    contour_boxes = get_contour_boxes(thresh)
-    avg = statistics.mean(map(lambda t: t[-1], contour_boxes))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    dilation = cv2.dilate(thresh, kernel, iterations=1)
+    contour_boxes = get_contour_boxes(dilation)
+    avg = statistics.mean(map(lambda t: t[-1]*t[-2], contour_boxes))
     boxes_copy = copy.deepcopy(contour_boxes)
     for box in boxes_copy:
         box_height = box[1] + box[3]
         height_lim = 0.9 * height
         if box[1] == 0 or box[1] > height_lim:
             contour_boxes.remove(box)
-        elif box_height == height and box[3] < 1.5 * avg:
+        elif box_height == height and box[1] > 0.8 * height:
+            contour_boxes.remove(box)
+        elif box[-1] * box[-2] < avg/2:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     if h < 55:
