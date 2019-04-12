@@ -97,11 +97,11 @@ def get_text_from_two_lines(img, box):
     for box in boxes_copy:
         box_height = box[1] + box[3]
         height_lim = 0.9 * height
-        if box[1] == 0 or box[1] > height_lim:
+        if box[1] > height_lim:
             contour_boxes.remove(box)
         elif box_height == height and box[1] > 0.8 * height:
             contour_boxes.remove(box)
-        elif box[-1] * box[-2] < avg/2:
+        elif box[-1] * box[-2] < avg/3:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     if h < 55:
