@@ -2,10 +2,10 @@ import cv2
 import pytesseract
 import numpy as np
 from PIL import Image
-import copy
 import re
-import statistics
 import subprocess
+import copy
+import statistics
 
 
 def show_img(img):
@@ -72,14 +72,21 @@ def get_dob_text(img):
     filename = 'temp.png'
     config = '--psm 7'
     lang = 'eng'
+    h, w, _ = img.shape
+    if h < 25:
+        ratio = 25//h
+        if ratio == 1:
+            ratio = ratio + 1
+        img = cv2.resize(img, None, fx=ratio, fy=ratio,
+                         interpolation=cv2.INTER_CUBIC)
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     date = re.findall(r'\d{2}/\d{2}/\d{4}', text)
     if date:
-        # print(date[0])
-        return date[0]
-    numbers = re.findall(r'\d', text)
+        numbers = re.findall(r'\d', text)
+    else:
+        numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
     if len(numbers) < 8:
         numbers.extend(['?' for i in range(8-len(numbers))])
@@ -139,13 +146,12 @@ def get_nation_text(img):
 
 def get_id_numbers_text(img):
     height_img, width_img, _ = img.shape
-    kernel = np.ones((height_img, height_img), np.uint8)
     if height_img < 20:
         img = cv2.resize(
             img, (2*width_img, 2*height_img), interpolation=cv2.INTER_CUBIC)
-        kernel = np.ones((height_img * 2, height_img*2), np.uint8)
+    height, width, _ = img.shape
+    kernel = np.ones((height//2, height//2), np.uint8)
     thresh = get_threshold_img(img, kernel)
-    height, width = thresh.shape
     boxes = get_contour_boxes(thresh)
     boxes_copy = copy.deepcopy(boxes)
     for box in boxes_copy:
