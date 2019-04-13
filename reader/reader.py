@@ -7,6 +7,7 @@ import subprocess
 import copy
 import statistics
 import math
+from unidecode import unidecode
 
 
 def show_img(img):
@@ -65,7 +66,6 @@ def get_text(img):
                          "-o", "11", "-t", "5", "temp.png", "temp.png"])
         text = pytesseract.image_to_string(Image.open(
             filename), lang=lang, config=config)
-    # print(text)
     return text
 
 
@@ -241,3 +241,23 @@ def find_max_box(group):
     ymax_box = max(group, key=lambda t: t[1] + t[3])
     ymax = ymax_box[1] + ymax_box[3]
     return (xmin, ymin, xmax - xmin, ymax - ymin)
+
+
+def fix_last_name(name):
+    fname = 'common_last_name.txt'
+    words = name.split()
+    words[0] = unidecode(words[0]).upper()
+    with open(fname) as f:
+        last_name_list = f.readlines()
+    last_name_list = [x.strip().upper() for x in last_name_list]
+    last_name_decode = [unidecode(x) for x in last_name_list]
+    if words[0] in last_name_decode:
+        words[0] = last_name_list[last_name_decode.index(words[0])]
+    text = ' '.join(words)
+    print(text)
+    return text
+
+
+def get_name_text(img):
+    name = get_text(img)
+    return fix_last_name(name)
