@@ -4,7 +4,7 @@ import statistics
 import copy
 import pytesseract
 from PIL import Image
-from util.util import get_contour_boxes, get_img_from_box, get_threshold_img, find_max_box, show_img, draw_rec
+from util.util import get_contour_boxes, get_img_from_box, get_threshold_img, find_max_box, show_img, draw_rec, plot_img
 from util.resize import resize_img_by_height, resize_img_by_width
 
 
@@ -55,7 +55,9 @@ def remove_name_label(group, width):
     avg = statistics.mean(map(lambda t: t[-1], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[-1] < avg and element[0] < width/5:
+        if element[0] < width/10:
+            group.remove(element)
+        elif element[-1] < avg and element[0] < width/5:
             group.remove(element)
     return group
 
@@ -64,7 +66,9 @@ def remove_smaller_area(group, width):
     avg = statistics.mean(map(lambda t: t[-1] * t[-2], group))
     group_orig = copy.deepcopy(group)
     for element in group_orig:
-        if element[-1] * element[-2] < avg and element[0] < width/5:
+        if element[0] < width/10:
+            group.remove(element)
+        elif element[-1] * element[-2] < avg and element[0] < width/5:
             group.remove(element)
     return group
 
