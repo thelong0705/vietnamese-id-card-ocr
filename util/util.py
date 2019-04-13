@@ -1,9 +1,15 @@
 import cv2
+import matplotlib.pyplot as plt
 
 
 def show_img(img):
     cv2.imshow('', img)
     cv2.waitKey(0)
+
+
+def plot_img(img):
+    plt.imshow(img)
+    plt.show()
 
 
 def draw_rec(list_rec_tuple, img, ratio=1):

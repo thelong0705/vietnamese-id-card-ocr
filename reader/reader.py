@@ -6,6 +6,7 @@ import re
 import subprocess
 import copy
 import statistics
+import math
 
 
 def show_img(img):
@@ -74,9 +75,7 @@ def get_dob_text(img):
     lang = 'eng'
     h, w, _ = img.shape
     if h < 25:
-        ratio = 25//h
-        if ratio == 1:
-            ratio = ratio + 1
+        ratio = math.ceil(25/h)
         img = cv2.resize(img, None, fx=ratio, fy=ratio,
                          interpolation=cv2.INTER_CUBIC)
     cv2.imwrite(filename, img)
@@ -84,7 +83,7 @@ def get_dob_text(img):
         filename), lang=lang, config=config)
     date = re.findall(r'\d{2}/\d{2}/\d{4}', text)
     if date:
-        numbers = re.findall(r'\d', text)
+        numbers = re.findall(r'\d', date[0])
     else:
         numbers = re.findall(r'\d', text)
     numbers = numbers[-8:]
