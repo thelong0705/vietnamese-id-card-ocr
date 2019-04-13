@@ -60,12 +60,13 @@ def get_text(img):
     lang = 'vie'
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
+        filename), lang=lang, config=config) 
     if not text:
         subprocess.call(["./textcleaner", "-g", "-e", "normalize",
                          "-o", "11", "-t", "5", "temp.png", "temp.png"])
         text = pytesseract.image_to_string(Image.open(
             filename), lang=lang, config=config)
+    text = text.strip('. :')
     return text
 
 
@@ -172,23 +173,20 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
-    text = text.strip()
+    text = text.strip('. :')
     colon_index = text.find(':')
     if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
         text = text.strip()
     else:
-        words = text.split()
-        for index, word in enumerate(words):
+        for index, letter in enumerate(text):
             if is_country:
-                condition = word[0].isupper()
+                condition = letter.isupper()
             else:
-                condition = word[0].isupper() or word[0].isdigit()
+                condition = letter.isupper() or letter.isdigit()
             if index != 0 and condition:
-                text = words[index:]
+                text = text[index:]
                 break
-        text = ' '.join(text)
-    # print(text)
     return text
 
 
