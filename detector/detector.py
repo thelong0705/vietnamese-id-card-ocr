@@ -12,8 +12,10 @@ def cropout_unimportant_part(img):
     h, w, _ = img.shape
     x = get_information_x_axis(img)
     y = get_information_y_axis(img)
+    pic = img[int(1.2*y):int(0.9*h), 0:int(0.9 * x)]
     img = img[y:h, x:w]
-    return img
+
+    return img, pic
 
 
 def crop_label(img):
@@ -184,6 +186,8 @@ def get_information_x_axis(img):
     for cnt in cnts_copy:
         if cnt[0] < 0.1*img_resize.shape[1]:
             cnts.remove(cnt)
+    draw_rec(cnts, img_resize)
+    show_img(img_resize)
     max_cnt = max(cnts, key=lambda x: x[-1])
     return int((max_cnt[0]-5+0.25*w)*ratio)
 
@@ -211,7 +215,8 @@ def get_information_y_axis(img):
 
 
 def detect_info(img):
-    img = cropout_unimportant_part(img)
+    img, face = cropout_unimportant_part(img)
+    plot_img(img)
     orig = img.copy()
     img, ratio = resize_img_by_height(img)
     label_img = crop_label(img)
@@ -257,4 +262,4 @@ def detect_info(img):
     last_y = get_last_y(country_result)
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
-    return number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
+    return face, number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list

@@ -60,7 +60,7 @@ def get_text(img):
     lang = 'vie'
     cv2.imwrite(filename, img)
     text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config) 
+        filename), lang=lang, config=config)
     if not text:
         subprocess.call(["./textcleaner", "-g", "-e", "normalize",
                          "-o", "11", "-t", "5", "temp.png", "temp.png"])
@@ -98,7 +98,6 @@ def get_dob_text(img):
     numbers[2:2] = ['/']
     numbers[5:5] = ['/']
     numbers = ''.join(numbers)
-    # print(numbers)
     return numbers
 
 
@@ -113,9 +112,8 @@ def get_gender_text(img):
     if capital_n_index != -1:
         gender_text = text[capital_n_index:]
         a_character = ['a', 'A', 'ă', 'â']
-        if gender_text[1] and gender_text[1] in a_character:
+        if (gender_text[1] and gender_text[1] in a_character) or gender_text[-1] == 'm':
             gender_text = 'Nam'
-            # print(gender_text)
             return gender_text
     gender_text = 'Nữ'
     # print(gender_text)
@@ -132,7 +130,6 @@ def get_nation_text(img):
     colon_index = text.find(':')
     if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
-        text = text.strip()
     else:
         words = text.split()
         for index, word in enumerate(words):
@@ -140,7 +137,7 @@ def get_nation_text(img):
                 text = words[index:]
                 break
         text = ' '.join(text)
-    # print(text)
+    text = text.strip('. :')
     return text
 
 
@@ -252,7 +249,6 @@ def fix_last_name(name):
     if words[0] in last_name_decode:
         words[0] = last_name_list[last_name_decode.index(words[0])]
     text = ' '.join(words)
-    print(text)
     return text
 
 
