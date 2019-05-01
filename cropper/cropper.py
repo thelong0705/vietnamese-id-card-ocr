@@ -1,12 +1,10 @@
 import numpy as np
 import tensorflow as tf
 import cv2
-from util.resize import resize
+from util.resize import resize_by_max
 from util.util import plot_img
 from collections import defaultdict
 from cropper.object_detection.utils import ops as utils_ops
-# from cropper.object_detection.utils import label_map_util
-# from cropper.object_detection.utils import visualization_utils as vis_util
 from cropper.transform import four_point_transform
 import copy
 
@@ -102,23 +100,18 @@ def get_conners(img, model_name):
                 ymin, xmin, ymax, xmax = tuple(boxes[i].tolist())
                 (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
                                               int(ymin * im_height), int(ymax * im_height))
+                # cv2.rectangle(img, (left, top),
+                #   (right, bottom), (255, 0, 0), 2)
                 conner_middle_point = (
                     (left + right) // 2, (top + bottom) // 2)
-                cv2.rectangle(img, (left, top),
-                              (right, bottom), (255, 0, 0), 2)
                 location_index = output_dict['detection_classes'][i]
                 list_conner.append((conner_middle_point, location_index))
             else:
                 ymin, xmin, ymax, xmax = tuple(boxes[i].tolist())
                 card_location = (int(xmin * im_width), int(xmax * im_width),
                                  int(ymin * im_height), int(ymax * im_height))
-    plot_img(img)
+    # plot_img(img)
     list_conner = remove_conner_outside_card(list_conner, card_location)
-    # for l in list_conner:
-    #     conner = l[0]
-    #     left, top = conner
-    #     cv2.rectangle(img, (left, top), (left+20, top+20), (255, 0, 0), 2)
-    # cv2.imwrite("predict.png", img)
     return list_conner
 
 
@@ -140,21 +133,6 @@ def remove_duplicate_conner(list_conner):
     return list_conner
 
 
-def resize_img(img):
-    h, w, _ = img.shape
-    max_dim = max(h, w)
-    ratio = 1
-    if max_dim <= 500:
-        return (img, ratio)
-    if max_dim == h:
-        ratio = img.shape[0] / 500.0
-        img = resize(img, height=500)
-    if max_dim == w:
-        ratio = img.shape[1] / 500.0
-        img = resize(img, width=500)
-    return (img, ratio)
-
-
 def append_missing_conner(list_conner):
     list_index = [conner[1] for conner in list_conner]
     missing_element = find_missing_element(list_index)
@@ -172,7 +150,7 @@ def append_missing_conner(list_conner):
 def crop_card(image_path):
     img = cv2.imread(image_path)
     orig = img.copy()
-    img, ratio = resize_img(img)
+    img, ratio = resize_by_max(img, 500)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     list_conner = get_conners(img, 'april_graphs')
     list_conner = remove_duplicate_conner(list_conner)

@@ -118,6 +118,10 @@ def get_text_from_two_lines(img, box):
         kernel = np.ones((1, width), np.uint8)
         dilation = cv2.dilate(crop_img, kernel, iterations=1)
         locs = get_contour_boxes(dilation)
+        locs_copy = copy.deepcopy(locs)
+        for l in locs_copy:
+            if l[-1] < 10:
+                locs.remove(l)
         if len(locs) > 1:
             x0, y0 = x0+x, y0+y
             locs.sort(key=lambda t: t[2]*t[3], reverse=True)
@@ -129,7 +133,20 @@ def get_text_from_two_lines(img, box):
             second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
             return [first_line, second_line]
         if len(locs) == 1:
-            return [(x0+x, y0+y, x0+x+w+5, y0+y+h)]
+            kernel = np.ones((1, width//30), np.uint8)
+            dilation = cv2.dilate(crop_img, kernel, iterations=1)
+            locs = get_contour_boxes(dilation)
+            if len(locs) < 2:
+                return [(x0+x, y0+y, x0+x+w, y0+y+h)]
+            x0, y0 = x0+x, y0+y
+            locs.sort(key=lambda t: t[2]*t[3], reverse=True)
+            locs = locs[:2]
+            locs.sort(key=lambda t: t[1])
+            x, y, w, h = locs[0]
+            first_line = (x0, y0+y, x0+x+w, y0+y+h)
+            x, y, w, h = locs[1]
+            second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
+            return [first_line, second_line]
 
 
 def process_result(orig, ratio, result):
@@ -164,7 +181,7 @@ def cut_blank_part(img, padding=5):
     for box in boxes_copy:
         if box[-1] < avg/2:
             contour_boxes.remove(box)
-        elif box[1] > img_h/2:
+        elif box[1] > img_h/2 and box[0] < img_w/10:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     new_width = x + w + padding
@@ -176,19 +193,17 @@ def cut_blank_part(img, padding=5):
 def get_information_x_axis(img):
     img, ratio = resize_img_by_height(img)
     h, w, _ = img.shape
-    img_resize = img[100:400, int(0.25*w):int(0.5*w)]
+    img_resize = img[100:400, int(0.25*w):int(0.4*w)]
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (100, 100))
     thresh = get_threshold_img(img_resize, kernel)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 100))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, h))
     dilation = cv2.dilate(thresh, kernel, iterations=1)
     cnts = get_contour_boxes(dilation)
     cnts_copy = copy.deepcopy(cnts)
     for cnt in cnts_copy:
         if cnt[0] < 0.1*img_resize.shape[1]:
             cnts.remove(cnt)
-    draw_rec(cnts, img_resize)
-    show_img(img_resize)
-    max_cnt = max(cnts, key=lambda x: x[-1])
+    max_cnt = max(cnts, key=lambda x: x[-1] * x[-2])
     return int((max_cnt[0]-5+0.25*w)*ratio)
 
 
@@ -216,7 +231,6 @@ def get_information_y_axis(img):
 
 def detect_info(img):
     img, face = cropout_unimportant_part(img)
-    plot_img(img)
     orig = img.copy()
     img, ratio = resize_img_by_height(img)
     label_img = crop_label(img)
@@ -237,6 +251,7 @@ def detect_info(img):
     name_box = info_list[0]
     name_box = get_name(img, get_main_text(img, name_box, 5))
     name_img = get_img_from_box(orig, ratio, name_box, padding=2)
+    name_img = cut_blank_part(name_img)
     # get dob part
     dob_box = info_list[1]
     dob_box = get_main_text(img, dob_box, 5)

@@ -31,7 +31,7 @@ plot_img(img)
 warped = crop_card(args["image"])
 plot_img(warped)
 
-
+# warped = cv2.imread('april_res/24.png')
 face, number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list = detect_info(
     warped)
 
@@ -47,7 +47,7 @@ for y in range(len(list_image)):
     plt.imshow(list_image[y])
 plt.show()
 
-plot_img(face)
+# plot_img(face)
 
 number_text = reader.get_id_numbers_text(number_img)
 name_text = reader.get_name_text(name_img)

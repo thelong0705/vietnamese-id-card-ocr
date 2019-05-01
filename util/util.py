@@ -1,7 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
 
-
 def show_img(img):
     cv2.imshow('', img)
     cv2.waitKey(0)
