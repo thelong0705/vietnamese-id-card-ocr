@@ -181,7 +181,7 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
                 condition = letter.isupper()
             else:
                 condition = letter.isupper() or letter.isdigit()
-            if index != 0 and condition:
+            if index > 7 and condition:
                 text = text[index:]
                 break
     return text

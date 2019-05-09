@@ -152,7 +152,7 @@ def crop_card(image_path):
     orig = img.copy()
     img, ratio = resize_by_max(img, 500)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    list_conner = get_conners(img, 'april_graphs')
+    list_conner = get_conners(img, 'graphs')
     list_conner = remove_duplicate_conner(list_conner)
     if len(list_conner) < 4:
         list_conner = append_missing_conner(list_conner)
