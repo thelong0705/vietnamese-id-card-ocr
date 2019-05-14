@@ -1,12 +1,12 @@
 import numpy as np
 import tensorflow as tf
 import cv2
+import copy
+import sys
 from util.resize import resize_by_max
-from util.util import plot_img
+from util.util import plot_img, four_point_transform
 from collections import defaultdict
 from cropper.object_detection.utils import ops as utils_ops
-from cropper.transform import four_point_transform
-import copy
 
 
 def load_image_into_numpy_array(image):
@@ -156,6 +156,10 @@ def crop_card(image_path):
     list_conner = remove_duplicate_conner(list_conner)
     if len(list_conner) < 4:
         list_conner = append_missing_conner(list_conner)
+    if len(list_conner) < 4:
+        print("Cant find card in image")
+        sys.exit()
+    list_conner.sort(key=lambda t: t[-1])
     list_conner_locations = [conner[0] for conner in list_conner]
     pts = np.array(list_conner_locations, dtype="float32")
     warped = four_point_transform(orig, pts * ratio)
