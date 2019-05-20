@@ -35,7 +35,7 @@ plot_img(warped)
 face, number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list = detect_info(
     warped)
 
-list_image = [number_img, name_img, dob_img,
+list_image = [face, number_img, name_img, dob_img,
               gender_img, nation_img, country_img_list[0]]
 if len(country_img_list) > 1 and country_img_list[1] is not None:
     list_image.append(country_img_list[1])

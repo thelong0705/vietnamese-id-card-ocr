@@ -115,38 +115,12 @@ def get_text_from_two_lines(img, box):
     else:
         crop_img = thresh[y:y+h, x:width]
         height, width = crop_img.shape
-        kernel = np.ones((1, width), np.uint8)
-        dilation = cv2.dilate(crop_img, kernel, iterations=1)
-        locs = get_contour_boxes(dilation)
-        locs_copy = copy.deepcopy(locs)
-        for l in locs_copy:
-            if l[-1] < 10:
-                locs.remove(l)
-        if len(locs) > 1:
-            x0, y0 = x0+x, y0+y
-            locs.sort(key=lambda t: t[2]*t[3], reverse=True)
-            locs = locs[:2]
-            locs.sort(key=lambda t: t[1])
-            x, y, w, h = locs[0]
-            first_line = (x0+x, y0+y, x0+x+w, y0+y+h)
-            x, y, w, h = locs[1]
-            second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
-            return [first_line, second_line]
-        if len(locs) == 1:
-            kernel = np.ones((1, width//30), np.uint8)
-            dilation = cv2.dilate(crop_img, kernel, iterations=1)
-            locs = get_contour_boxes(dilation)
-            if len(locs) < 2:
-                return [(x0+x, y0+y, x0+x+w, y0+y+h)]
-            x0, y0 = x0+x, y0+y
-            locs.sort(key=lambda t: t[2]*t[3], reverse=True)
-            locs = locs[:2]
-            locs.sort(key=lambda t: t[1])
-            x, y, w, h = locs[0]
-            first_line = (x0, y0+y, x0+x+w, y0+y+h)
-            x, y, w, h = locs[1]
-            second_line = (x0+x, y0+y, x0+x+w, y0+y+h+5)
-            return [first_line, second_line]
+        hist = cv2.reduce(crop_img, 1, cv2.REDUCE_AVG).reshape(-1)
+        hist = uppers = [hist[y] for y in range(height//3, 2*height//3)]
+        line = uppers.index(min(uppers)) + height//3
+        first_line = (x0+x, y0+y, x0+x+w, y0+y+line)
+        second_line = (x0+x, y0+y+line, x0+x+w, y0+y+h)
+        return [first_line, second_line]
 
 
 def process_result(orig, ratio, result):

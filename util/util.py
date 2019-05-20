@@ -13,6 +13,11 @@ def plot_img(img):
     plt.show()
 
 
+def plot_img_bin(img):
+    plt.imshow(img, cmap='gray')
+    plt.show()
+
+
 def draw_rec(list_rec_tuple, img, ratio=1):
     for rec_tuple in list_rec_tuple:
         x, y, w, h = tuple(int(ratio * l) for l in rec_tuple)
