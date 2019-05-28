@@ -55,53 +55,59 @@ nation_wrong = 0
 country_wrong = 0
 address_wrong = 0
 
-for i in range(20):
-    print('#', i)
-    warped = cv2.imread('result/w_{}.png'.format(i))
-    number_img, name_img, dob_img, gender_img,\
-        nation_img, country_img_list, address_img_list = detect_info(warped)
+for i in range(50):
+    print(i)
+    warped = cv2.imread('test/detector_test/{}.png'.format(i))
+    _, number_img, name_img, dob_img, gender_img,\
+        nation_img, country_img, address_img, country_img_list, address_img_list = detect_info(
+            warped)
     number_text = reader.get_id_numbers_text(number_img)
-    name_text = reader.get_text(name_img)
+    name_text = reader.get_name_text(name_img)
     dob_text = reader.get_dob_text(dob_img)
     gender_text = reader.get_gender_text(gender_img)
     nation_text = reader.get_nation_text(nation_img)
     country_text = reader.process_list_img(country_img_list, is_country=True)
     address_text = reader.process_list_img(address_img_list, is_country=False)
     if i < 20:
-        filepath = 'result/{}.txt'.format(i)
-    elif i >= 20 and i < 30:
-        filepath = 'result/{}.txt'.format(5)
+        filepath = 'test/detector_test/{}.txt'.format(i)
     else:
-        filepath = 'result/{}.txt'.format(11)
+        filepath = 'test/detector_test/{}.txt'.format(i//10*10)
     number_truth, name_truth, dob_truth, gender_truth, nation_truth, country_truth, address_truth = get_ground_truth(
         filepath)
-    id_character = id_character + 12
-    name_character = name_character + len(name_truth)
-    dob_character = dob_character + len(dob_truth)
-    gender_character = gender_character + len(gender_truth)
-    nation_character = nation_character + len(nation_truth)
-    country_character = country_character + len(country_truth)
-    address_character = address_character + len(address_truth)
+    id_character = 12
+    name_character = len(name_truth)
+    dob_character = len(dob_truth)
+    gender_character = len(gender_truth)
+    nation_character = len(nation_truth)
+    country_character = len(country_truth)
+    address_character = len(address_truth)
 
-    number_wrong = number_wrong + distance(number_text, number_truth)
-    name_wrong = name_wrong + distance(name_text, name_truth)
-    dob_wrong = dob_wrong + distance(dob_text, dob_truth)
-    gender_wrong = gender_wrong + distance(gender_text, gender_truth)
-    nation_wrong = nation_wrong + distance(nation_text, nation_truth)
-    country_wrong = country_wrong + distance(country_text, country_truth)
-    address_wrong = address_wrong + distance(address_text, address_truth)
+    number_wrong = (number_wrong * i + distance(number_text,
+                                                number_truth)/id_character)/(i+1)
+    name_wrong = (name_wrong * i + distance(name_text,
+                                            name_truth)/name_character)/(i+1)
+    dob_wrong = (dob_wrong * i + distance(dob_text,
+                                          dob_truth)/dob_character)/(i+1)
+    gender_wrong = (gender_wrong * i + distance(gender_text,
+                                                gender_truth)/gender_character)/(i+1)
+    nation_wrong = (nation_wrong * i + distance(nation_text,
+                                                nation_truth)/nation_character)/(i+1)
+    country_wrong = (country_wrong * i + distance(country_text,
+                                                  country_truth)/country_character)/(i+1)
+    address_wrong = (address_wrong * i + distance(address_text,
+                                                  address_truth)/address_character)/(i+1)
 
-    print('ID:      ', number_wrong, distance(number_text, number_truth),
+    print('ID:      ', round(number_wrong*100, 2), distance(number_text, number_truth),
           ' ID character', id_character)
-    print('Name:    ', name_wrong, distance(name_text, name_truth),
+    print('Name:    ', round(name_wrong*100, 2), distance(name_text, name_truth),
           ' Name character', name_character)
-    print('DOB:     ', dob_wrong, distance(dob_text, dob_truth),
+    print('DOB:     ', round(dob_wrong*100, 2), distance(dob_text, dob_truth),
           ' DOB character', dob_character)
-    print('GENDER:  ', gender_wrong, distance(gender_text, gender_truth),
+    print('GENDER:  ', round(gender_wrong*100, 2), distance(gender_text, gender_truth),
           ' GENDER character', gender_character)
-    print('NATION:  ', nation_wrong, distance(nation_text, nation_truth),
+    print('NATION:  ', round(nation_wrong*100, 2), distance(nation_text, nation_truth),
           'Nation character', nation_character)
-    print('COUNTRY: ', country_wrong, distance(country_text, country_truth),
+    print('COUNTRY: ', round(country_wrong*100, 2), distance(country_text, country_truth),
           'COUNTRY character', country_character)
-    print('ADDRESS: ', address_wrong, distance(address_text, address_truth),
+    print('ADDRESS: ', round(address_wrong*100, 2), distance(address_text, address_truth),
           'ADDRESS character', address_character)

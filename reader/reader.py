@@ -8,6 +8,7 @@ import copy
 import statistics
 import math
 from unidecode import unidecode
+from util.util import get_threshold_img, get_contour_boxes, run_item, gather_results
 
 
 def show_img(img):
@@ -16,42 +17,15 @@ def show_img(img):
 
 
 def get_each_number(img, normal_img):
-    filename = 'temp.png'
     config = '--oem 0  --psm 10 -c tessedit_char_whitelist=1234567890'
     lang = 'eng'
-    cv2.imwrite(filename, img)
-    text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
+    text = pytesseract.image_to_string(img, lang=lang, config=config)
     if not text:
-        cv2.imwrite(filename, normal_img)
-        text = pytesseract.image_to_string(Image.open(
-            filename), lang=lang, config=config)
+        text = pytesseract.image_to_string(
+            normal_img, lang=lang, config=config)
         if not text:
             text = '?'
     return text
-
-
-def get_threshold_img(img, kernel):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
-    thresh = cv2.threshold(
-        blackhat, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    return thresh
-
-
-def get_contour_boxes(img):
-    _, cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL,
-                                  cv2.CHAIN_APPROX_SIMPLE)
-    contour_boxes = []
-    for cnt in cnts:
-        contour_boxes.append(cv2.boundingRect(cnt))
-    return contour_boxes
-
-
-def draw_rec(list_rec_tuple, img, ratio=1):
-    for rec_tuple in list_rec_tuple:
-        x, y, w, h = tuple(int(ratio * l) for l in rec_tuple)
-        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
 
 def get_text(img):
@@ -62,7 +36,7 @@ def get_text(img):
     text = pytesseract.image_to_string(Image.open(
         filename), lang=lang, config=config)
     if not text:
-        subprocess.call(["./textcleaner", "-g", "-e", "normalize",
+        subprocess.call(["./resources/textcleaner", "-g", "-e", "normalize",
                          "-o", "11", "-t", "5", "temp.png", "temp.png"])
         text = pytesseract.image_to_string(Image.open(
             filename), lang=lang, config=config)
@@ -155,12 +129,14 @@ def get_id_numbers_text(img):
         if box[3] < 0.4 * height:
             boxes.remove(box)
     boxes.sort(key=lambda t: t[0])
-    text = ''
+    list_number = []
     for box in boxes:
         x, y, w, h = box
-        number = thresh[0:height, x-2:x+w+2]
-        text = text + get_each_number(number, img[0:height, x-2:x+w+2])
-    # print(text[-12:])
+        thresh_number = thresh[0:height, x-2:x+w+2]
+        normal_number = img[0:height, x-2:x+w+2]
+        list_number.append((thresh_number, normal_number))
+    numbers = gather_results([run_item(get_each_number, item) for item in list_number])
+    text = ''.join(numbers)
     return text[-12:]
 
 
@@ -239,7 +215,7 @@ def find_max_box(group):
 
 
 def fix_last_name(name):
-    fname = 'common_last_name.txt'
+    fname = 'resources/common_last_name.txt'
     words = name.split()
     words[0] = unidecode(words[0]).upper()
     with open(fname) as f:

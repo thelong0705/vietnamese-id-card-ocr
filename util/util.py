@@ -1,7 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-
+import threading
 
 def show_img(img):
     cv2.imshow('', img)
@@ -77,5 +77,22 @@ def four_point_transform(image, rect):
     M = cv2.getPerspectiveTransform(rect, dst)
     warped = cv2.warpPerspective(
         image, M, (maxWidth, maxHeight), flags=cv2.INTER_NEAREST)
-
     return warped
+
+
+def run_item(f, item):
+    result_info = [threading.Event(), None]
+
+    def runit():
+        result_info[1] = f(item[0], item[1])
+        result_info[0].set()
+    threading.Thread(target=runit).start()
+    return result_info
+
+
+def gather_results(result_infos):
+    results = []
+    for i in range(len(result_infos)):
+        result_infos[i][0].wait()
+        results.append(result_infos[i][1])
+    return results

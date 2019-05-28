@@ -123,6 +123,30 @@ def get_text_from_two_lines(img, box):
         return [first_line, second_line]
 
 
+def get_two_lines_img(img, box):
+    x0, y0, x1, y1 = box
+    img = img[y0:y1, x0:x1]
+    kernel = np.ones((25, 25), np.uint8)
+    thresh = get_threshold_img(img, kernel)
+    height, width = thresh.shape
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    dilation = cv2.dilate(thresh, kernel, iterations=1)
+    contour_boxes = get_contour_boxes(dilation)
+    avg = statistics.mean(map(lambda t: t[-1]*t[-2], contour_boxes))
+    boxes_copy = copy.deepcopy(contour_boxes)
+    for box in boxes_copy:
+        box_height = box[1] + box[3]
+        height_lim = 0.9 * height
+        if box[1] > height_lim:
+            contour_boxes.remove(box)
+        elif box_height == height and box[1] > 0.8 * height:
+            contour_boxes.remove(box)
+        elif box[-1] * box[-2] < avg/3:
+            contour_boxes.remove(box)
+    x, y, w, h = find_max_box(contour_boxes)
+    return (x0+x, y0+y, x0+x+w+5, y0+y+h+5)
+
+
 def process_result(orig, ratio, result):
     if type(result) is tuple:
         return [get_img_from_box(orig, ratio, result, padding=2)]
@@ -156,6 +180,8 @@ def cut_blank_part(img, padding=5):
         if box[-1] < avg/2:
             contour_boxes.remove(box)
         elif box[1] > img_h/2 and box[0] < img_w/10:
+            contour_boxes.remove(box)
+        elif box[1] < img_h/10 and box[-1] < img_h/5:
             contour_boxes.remove(box)
     x, y, w, h = find_max_box(contour_boxes)
     new_width = x + w + padding
@@ -244,11 +270,16 @@ def detect_info(img):
     country_box = info_list[3]
     x, y, x1, y1 = country_box
     last_y = gender_and_nationality_box[-1]
+    country_img = process_result(
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
     country_result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     country_img_list = process_result(orig, ratio, country_result)
     address_box = info_list[4]
     x, y, x1, y1 = address_box
     last_y = get_last_y(country_result)
+    address_img = process_result(
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
-    return face, number_img, name_img, dob_img, gender_img, nation_img, country_img_list, address_img_list
+    return face, number_img, name_img, dob_img, gender_img, nation_img, country_img, \
+        address_img, country_img_list, address_img_list
