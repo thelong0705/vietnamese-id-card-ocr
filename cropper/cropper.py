@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import copy
-import sys
 from util.resize import resize_by_max
 from util.util import plot_img, four_point_transform
 from collections import defaultdict
@@ -157,8 +156,7 @@ def crop_card(image_path):
     if len(list_conner) < 4:
         list_conner = append_missing_conner(list_conner)
     if len(list_conner) < 4:
-        print("Cant find card in image")
-        sys.exit()
+        return None
     list_conner.sort(key=lambda t: t[-1])
     list_conner_locations = [conner[0] for conner in list_conner]
     pts = np.array(list_conner_locations, dtype="float32")

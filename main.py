@@ -5,8 +5,8 @@ from detector.detector import detect_info
 from reader import reader
 import matplotlib.pyplot as plt
 import numpy as np
-import time
-from threads import read
+import sys
+
 
 def show_img(img):
     cv2.imshow('', img)
@@ -22,19 +22,27 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required=True,
                 help="Path to the image to be scanned")
 args = vars(ap.parse_args())
-begin = time.time()
+
 
 img = cv2.imread(args["image"])
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 plot_img(img)
 
-
 warped = crop_card(args["image"])
-plot_img(warped)
 
-face, number_img, name_img, dob_img, gender_img, nation_img, \
-    country_img, address_img, country_img_list, address_img_list = detect_info(
-        warped)
+
+if warped is None:
+    print('Cant find id card in image')
+    sys.exit()
+
+try:
+    face, number_img, name_img, dob_img, gender_img, nation_img, \
+        country_img, address_img, country_img_list, address_img_list = detect_info(
+            warped)
+except:
+    print('Cant find id card in image')
+    sys.exit()
+
 
 list_image = [face, number_img, name_img, dob_img,
               gender_img, nation_img, country_img, address_img]
@@ -43,17 +51,6 @@ for y in range(len(list_image)):
     plt.subplot(len(list_image), 1, y+1)
     plt.imshow(list_image[y])
 plt.show()
-
-# list_image.append(country_img_list[0])
-# if len(country_img_list) > 1 and country_img_list[1] is not None:
-#     list_image.append(country_img_list[1])
-# list_image.append(address_img_list[0])
-# if len(address_img_list) > 1 and address_img_list[1] is not None:
-#     list_image.append(address_img_list[1])
-# for y in range(len(list_image)):
-#     plt.subplot(len(list_image), 1, y+1)
-#     plt.imshow(list_image[y])
-# # plt.show()
 
 number_text = reader.get_id_numbers_text(number_img)
 name_text = reader.get_name_text(name_img)
