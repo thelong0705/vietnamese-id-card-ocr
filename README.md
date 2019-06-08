@@ -26,5 +26,6 @@ pip install -r requirements.txt
 ```
 python main.py -i path/to/image
 ```
-
-
+### Demo
+![alt text](./demo/input.png)
+![alt text](./demo/output.png)
