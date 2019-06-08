@@ -267,14 +267,14 @@ def detect_info(img):
     x, y, x1, y1 = country_box
     last_y = gender_and_nationality_box[-1]
     country_img = process_result(
-        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
     country_result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     country_img_list = process_result(orig, ratio, country_result)
     address_box = info_list[4]
     x, y, x1, y1 = address_box
     last_y = get_last_y(country_result)
     address_img = process_result(
-        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
     return face, number_img, name_img, dob_img, gender_img, nation_img, country_img, \
