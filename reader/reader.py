@@ -135,7 +135,8 @@ def get_id_numbers_text(img):
         thresh_number = thresh[0:height, x-2:x+w+2]
         normal_number = img[0:height, x-2:x+w+2]
         list_number.append((thresh_number, normal_number))
-    numbers = gather_results([run_item(get_each_number, item) for item in list_number])
+    numbers = gather_results([run_item(get_each_number, item)
+                              for item in list_number])
     text = ''.join(numbers)
     return text[-12:]
 
@@ -157,7 +158,7 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
                 condition = letter.isupper()
             else:
                 condition = letter.isupper() or letter.isdigit()
-            if index > 7 and condition:
+            if index > 1 and condition:
                 text = text[index:]
                 break
     return text
@@ -166,12 +167,10 @@ def strip_label_and_get_text(img, is_country, config='--psm 7'):
 def process_list_img(img_list, is_country):
     if len(img_list) == 1:
         return process_first_line(img_list[0], is_country)
-    if len(img_list) == 2 and img_list[1] is not None:
+    if len(img_list) == 2:
         line1 = process_first_line(img_list[0], is_country)
         line2 = get_text(img_list[1])
         return line1 + '\n' + line2
-    else:
-        return strip_label_and_get_text(img_list[0], is_country, config='')
 
 
 def process_first_line(img, is_country):

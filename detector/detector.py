@@ -150,23 +150,19 @@ def get_two_lines_img(img, box):
 def process_result(orig, ratio, result):
     if type(result) is tuple:
         return [get_img_from_box(orig, ratio, result, padding=2)]
-    if type(result) is list and len(result) == 2:
+    if type(result) is list:
         first_line = get_img_from_box(orig, ratio, result[0], padding=2)
         first_line = cut_blank_part(first_line)
         second_line_img = get_img_from_box(orig, ratio, result[1], padding=2)
         second_line = cut_blank_part(second_line_img)
         return [first_line, second_line]
-    if type(result) is list and len(result) == 1:
-        return [get_img_from_box(orig, ratio, result[0], padding=2), None]
 
 
 def get_last_y(result):
     if type(result) is tuple:
         return result[-1]
-    if type(result) is list and len(result) == 2:
+    if type(result) is list:
         return result[1][-1]
-    if type(result) is list and len(result) == 1:
-        return result[0][-1]
 
 
 def cut_blank_part(img, padding=5):
@@ -271,14 +267,14 @@ def detect_info(img):
     x, y, x1, y1 = country_box
     last_y = gender_and_nationality_box[-1]
     country_img = process_result(
-        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))
     country_result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     country_img_list = process_result(orig, ratio, country_result)
     address_box = info_list[4]
     x, y, x1, y1 = address_box
     last_y = get_last_y(country_result)
     address_img = process_result(
-        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))[0]
+        orig, ratio, get_two_lines_img(img, (x, last_y, x1, y1)))
     result = get_text_from_two_lines(img, (x, last_y, x1, y1))
     address_img_list = process_result(orig, ratio, result)
     return face, number_img, name_img, dob_img, gender_img, nation_img, country_img, \
