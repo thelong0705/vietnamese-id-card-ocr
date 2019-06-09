@@ -232,8 +232,8 @@ def detect_info(img):
     label_img = crop_label(img)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
     threshold_img = get_threshold_img(label_img, kernel)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (label_img.shape[1], 5))
-    dilation = cv2.dilate(threshold_img, kernel, iterations=2)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (label_img.shape[1]//2, 5))
+    dilation = cv2.dilate(threshold_img, kernel, iterations=1)
     contour_boxes = get_contour_boxes(dilation)
     contour_boxes.sort(key=lambda t: t[2] * t[3], reverse=True)
     contour_boxes = contour_boxes[:5]

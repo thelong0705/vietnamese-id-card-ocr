@@ -76,12 +76,7 @@ def get_dob_text(img):
 
 
 def get_gender_text(img):
-    filename = 'temp.png'
-    config = '--psm 7'
-    lang = 'vie'
-    cv2.imwrite(filename, img)
-    text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
+    text = get_text(img)
     capital_n_index = text.find('N')
     if capital_n_index != -1:
         gender_text = text[capital_n_index:]
@@ -90,17 +85,11 @@ def get_gender_text(img):
             gender_text = 'Nam'
             return gender_text
     gender_text = 'Nữ'
-    # print(gender_text)
     return gender_text
 
 
 def get_nation_text(img):
-    filename = 'temp.png'
-    config = '--psm 7'
-    lang = 'vie'
-    cv2.imwrite(filename, img)
-    text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
+    text = get_text(img)
     colon_index = text.find(':')
     if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
@@ -132,6 +121,8 @@ def get_id_numbers_text(img):
     list_number = []
     for box in boxes:
         x, y, w, h = box
+        if x < 2 or x+w+2 > width:
+            continue
         thresh_number = thresh[0:height, x-2:x+w+2]
         normal_number = img[0:height, x-2:x+w+2]
         list_number.append((thresh_number, normal_number))
@@ -142,12 +133,7 @@ def get_id_numbers_text(img):
 
 
 def strip_label_and_get_text(img, is_country, config='--psm 7'):
-    filename = 'temp.png'
-    lang = 'vie'
-    cv2.imwrite(filename, img)
-    text = pytesseract.image_to_string(Image.open(
-        filename), lang=lang, config=config)
-    text = text.strip('. :')
+    text = get_text(img)
     colon_index = text.find(':')
     if colon_index != -1 and colon_index < len(text)/2:
         text = text[colon_index+1:]
@@ -193,7 +179,7 @@ def process_first_line(img, is_country):
     avg = statistics.mean(list_distance)
     list_copy = copy.deepcopy(list_distance)
     list_copy.sort(reverse=True)
-    if list_copy[0] > 3 * list_copy[1]:
+    if len(list_copy) > 1 and list_copy[0] > 3 * list_copy[1]:
         max_index = list_distance.index(list_copy[0])
         contour_boxes = contour_boxes[max_index+1:]
         x, y, w, h = find_max_box(contour_boxes)
