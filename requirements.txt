@@ -37,5 +37,5 @@ tensorboard==1.12.2
 tensorflow==1.12.0
 termcolor==1.1.0
 Unidecode==1.0.23
-urllib3==1.25.2
+urllib3==1.25.8
 Werkzeug==0.15.4
