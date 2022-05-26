@@ -34,7 +34,7 @@ sip==4.19.8
 six==1.12.0
 slim==0.1
 tensorboard==1.12.2
-tensorflow==1.12.0
+tensorflow==2.7.2
 termcolor==1.1.0
 Unidecode==1.0.23
 urllib3==1.25.2
