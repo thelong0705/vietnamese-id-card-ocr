@@ -17,7 +17,7 @@ Kivy-Garden==0.1.4
 kiwisolver==1.1.0
 Markdown==3.1.1
 matplotlib==3.1.0
-numpy==1.16.3
+numpy==1.22.0
 object-detection==0.1
 opencv-python==3.4.1.15
 pgzero==1.2
